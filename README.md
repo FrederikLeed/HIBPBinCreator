@@ -2,7 +2,42 @@
 
 Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM password hash list** and compresses it into a compact binary file ready for offline use (e.g. with [Get-BadPasswords](https://github.com/improsec/Get-BadPasswords)).
 
-![Workflow diagram](docs/workflow.svg)
+## Workflow
+
+### Phase 1 — `PrepareEnv.ps1`
+
+| Step | Action | Details |
+|:----:|--------|---------|
+| 1 | Create folder structure | `tools/` · `output/hashes/` · `output/bin/` · `logs/` |
+| 2 | .NET SDK ≥ v8 | Auto-install via `winget` if missing |
+| 3 | haveibeenpwned-downloader | `dotnet tool install --global` |
+| 4 | PsiRepacker.exe | `git clone` → use pre-built binary |
+
+> ✅ **Output:** `config.psd1` with all resolved paths — **safe to re-run**
+
+---
+
+### Phase 2 — `BinaryCreator.ps1`
+
+| Step | Action | Details |
+|:----:|--------|---------|
+| 1 | Pre-flight | Disk space ≥ 100 GB free · tool validation |
+| 2 | Download | 1,048,576 hash ranges · 64 threads · **~25 min** · **~69 GB** |
+| 3 | Pack | PsiRepacker.exe · load → sort → save · **~8 min** · **~55% reduction** |
+| 4 | Verify & cleanup | Sanity check ≥ 10% of source · delete source `.txt` (~69 GB) |
+
+> 📦 **Output:** `hibpntlmhashes<ddMMyy>.bin` **(~31 GB)**
+
+---
+
+### Downstream Use
+
+| Use Case | Tool |
+|----------|------|
+| AD password audit | [Get-BadPasswords](https://github.com/improsec/Get-BadPasswords) by Improsec |
+| Offline hash lookup | Binary file — no API dependency |
+
+---
 
 ## Output
 
