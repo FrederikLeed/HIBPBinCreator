@@ -1,0 +1,11 @@
+# Auto-generated environment
+config.psd1
+
+# Downloaded hash data and binary output (~10 GB+)
+output/
+
+# Cloned/built tools
+tools/
+
+# Log files
+logs/
