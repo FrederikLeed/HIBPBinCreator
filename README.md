@@ -51,16 +51,15 @@ Example: `hibpntlmhashes260226.bin` — a date-stamped binary packed from the co
 
 ## Prerequisites
 
-| Requirement | Notes |
-|---|---|
-| Windows PowerShell 5.1+ or PowerShell 7+ | Built-in on Windows 10/11 |
-| [git](https://git-scm.com/downloads) | **PrepareEnv.ps1** installs via `winget` if missing |
-| [.NET SDK 8 LTS+](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) | Required by `haveibeenpwned-downloader`; **PrepareEnv.ps1** installs via `winget` if missing |
-| Internet access | ~69 GB download of NTLM hashes from the HIBP CDN |
+| # | Requirement | Auto-installed | Notes |
+|:-:|-------------|:--------------:|-------|
+| 1 | Windows PowerShell 5.1+ / pwsh 7+ | — | Built-in on Windows 10/11 |
+| 2 | [git](https://git-scm.com/downloads) | ✅ | via `winget` |
+| 3 | [.NET SDK 8+](https://dotnet.microsoft.com/download/dotnet/8.0) | ✅ | via `winget` — required by the HIBP downloader |
+| 4 | Internet access | — | ~69 GB download from the HIBP CDN |
 
-> **PrepareEnv.ps1** installs all prerequisites automatically via `winget` (git, .NET SDK, haveibeenpwned-downloader). No manual setup required on a clean Windows machine with `winget` available (Windows 10 1709+ / Windows 11).
->
-> **BinaryCreator.ps1** will automatically invoke **PrepareEnv.ps1** if `config.psd1` is not found — so you can also just run `BinaryCreator.ps1` directly on a clean machine.
+> 💡 **Zero manual setup** — `PrepareEnv.ps1` installs everything automatically via `winget` (Windows 10 1709+ / 11).
+> You can also skip it entirely: `BinaryCreator.ps1` will invoke `PrepareEnv.ps1` on its own if `config.psd1` is missing.
 
 ---
 
