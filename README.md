@@ -2,6 +2,8 @@
 
 Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM password hash list** and compresses it into a compact binary file ready for offline use (e.g. with [Get-BadPasswords](https://github.com/improsec/Get-BadPasswords)).
 
+![Workflow diagram](docs/workflow.svg)
+
 ## Output
 
 ```
