@@ -294,6 +294,32 @@ if (-not (Test-Path $BinFile)) {
 $binSize = (Get-Item $BinFile).Length
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  Sanity-check the binary, then remove the source text file
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Minimum expected binary size: 10% of source (PsiRepacker typically achieves
+# ~55% compression, so anything below 10% indicates a corrupt/empty output).
+$minExpectedSize = [long]($hashSize * 0.10)
+
+if ($binSize -lt $minExpectedSize) {
+    Write-Log "Binary sanity check FAILED: output is $(Format-Bytes $binSize) which is less than 10% of source $(Format-Bytes $hashSize)." -Level ERROR
+    Write-Log "The binary may be corrupt. Hash text file has NOT been deleted: $HashFile" -Level WARN
+    exit 1
+}
+
+Write-Log "Binary sanity check passed: $(Format-Bytes $binSize) from $(Format-Bytes $hashSize) source." -Level SUCCESS
+
+# Remove the source hash text file now that the binary is confirmed good
+Write-Log "Removing source hash text file: $HashFile"
+try {
+    Remove-Item -Path $HashFile -Force
+    Write-Log "Hash text file removed successfully." -Level SUCCESS
+} catch {
+    Write-Log "Failed to remove hash text file: $_" -Level WARN
+    Write-Log "You can delete it manually: $HashFile" -Level WARN
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  Summary
 # ─────────────────────────────────────────────────────────────────────────────
 Write-Step 'Completed'

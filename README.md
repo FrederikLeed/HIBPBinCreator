@@ -102,7 +102,9 @@ Downloads the full NTLM hash corpus and compresses it to a binary.
    ```
 4. **Compresses** the resulting text file using `PsiRepacker` — live spinner shows elapsed time and growing output file size
 5. Saves the binary as `output\bin\hibpntlmhashes<ddMMyy>.bin`
-6. Prints a full summary: file size, compression ratio, and timing
+5. **Verifies** the binary passes a sanity check (output must be ≥ 10% of source size to guard against corrupt output)
+6. **Deletes** `pwnedpasswords_ntlm.txt` (~69 GB) automatically once the binary is confirmed good, to free disk space
+7. Prints a full summary: file size, compression ratio, and timing
 
 **Parameters:**
 
