@@ -19,7 +19,7 @@ Example: `hibpntlmhashes260226.bin` — a date-stamped binary packed from the co
 | Windows PowerShell 5.1+ or PowerShell 7+ | Built-in on Windows 10/11 |
 | [git](https://git-scm.com/downloads) | **PrepareEnv.ps1** installs via `winget` if missing |
 | [.NET SDK 8 LTS+](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) | Required by `haveibeenpwned-downloader`; **PrepareEnv.ps1** installs via `winget` if missing |
-| Internet access | ~10 GB download from the HIBP CDN |
+| Internet access | ~69 GB download of NTLM hashes from the HIBP CDN |
 
 > **PrepareEnv.ps1** installs all prerequisites automatically via `winget` (git, .NET SDK, haveibeenpwned-downloader). No manual setup required on a clean Windows machine with `winget` available (Windows 10 1709+ / Windows 11).
 >
@@ -54,7 +54,7 @@ hibpbinarycreator\
 │   └── PsiRepacker\        # Cloned from GitHub, pre-built binary used directly
 │
 ├── output\
-│   ├── hashes\             # pwnedpasswords_ntlm.txt  (~10 GB)
+│   ├── hashes\             # pwnedpasswords_ntlm.txt  (~69 GB, deleted after packing)
 │   └── bin\                # hibpntlmhashes<ddMMyy>.bin  (final output)
 │
 └── logs\
@@ -72,12 +72,11 @@ Idempotent bootstrap script. Safe to re-run at any time.
 
 **What it does (in order):**
 
-1. Creates the full folder structure
-2. Verifies `git` is installed; installs via `winget` if missing
-3. Verifies .NET SDK ≥ v8; installs via `winget` if missing
-4. Installs or updates the `haveibeenpwned-downloader` dotnet global tool
-5. Clones the PsiRepacker repository and locates the pre-built `PsiRepacker.exe`; falls back to MSBuild if no binary is present in the repo
-6. Writes `config.psd1` with all resolved paths for `BinaryCreator.ps1` to consume
+1. Creates the full folder structure *(Step 1/4)*
+2. Verifies .NET SDK ≥ v8; installs via `winget` if missing *(Step 2/4)*
+3. Installs or updates the `haveibeenpwned-downloader` dotnet global tool *(Step 3/4)*
+4. Checks for PsiRepacker — installs `git` via `winget` if needed, clones the repository, and locates the pre-built `PsiRepacker.exe`; falls back to MSBuild if no binary is present in the repo *(Step 4/4)*
+5. Writes `config.psd1` with all resolved paths for `BinaryCreator.ps1` to consume
 
 **Parameters:**
 
@@ -102,9 +101,9 @@ Downloads the full NTLM hash corpus and compresses it to a binary.
    ```
 4. **Compresses** the resulting text file using `PsiRepacker` — live spinner shows elapsed time and growing output file size
 5. Saves the binary as `output\bin\hibpntlmhashes<ddMMyy>.bin`
-5. **Verifies** the binary passes a sanity check (output must be ≥ 10% of source size to guard against corrupt output)
-6. **Deletes** `pwnedpasswords_ntlm.txt` (~69 GB) automatically once the binary is confirmed good, to free disk space
-7. Prints a full summary: file size, compression ratio, and timing
+6. **Verifies** the binary passes a sanity check (output must be ≥ 10% of source size to guard against corrupt output)
+7. **Deletes** `pwnedpasswords_ntlm.txt` (~69 GB) automatically once the binary is confirmed good, to free disk space (use `-KeepHashFile` to preserve)
+8. Prints a full summary: file size, compression ratio, and timing
 
 **Parameters:**
 
@@ -113,6 +112,7 @@ Downloads the full NTLM hash corpus and compresses it to a binary.
 | `-Parallelism` | `64` | Download thread count passed to `haveibeenpwned-downloader` |
 | `-NoOverwrite` | `$false` | Omit the `-o` flag; downloader will skip existing ranges |
 | `-SkipDownload` | `$false` | Skip the download step if the hash text file already exists on disk |
+| `-KeepHashFile` | `$false` | Preserve the source text file (~69 GB) instead of deleting it after packing |
 
 ---
 

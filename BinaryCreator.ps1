@@ -25,7 +25,8 @@
 param(
     [int]   $Parallelism = 64,
     [switch]$NoOverwrite,     # pass to skip -o flag for the downloader
-    [switch]$SkipDownload     # skip download if hash file already exists
+    [switch]$SkipDownload,    # skip download if hash file already exists
+    [switch]$KeepHashFile     # do not delete the source text file after packing
 )
 
 Set-StrictMode -Version Latest
@@ -155,6 +156,28 @@ $BinFile      = Join-Path $BinDir $BinFileName
 Write-Log "Hash text file : $HashFile"
 Write-Log "Binary output  : $BinFile"
 Write-Log "Log file       : $LogFile"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Disk space pre-check
+# ─────────────────────────────────────────────────────────────────────────────
+# NTLM hashes are ~69 GB, binary output ~31 GB.  During packing both exist
+# simultaneously so ~100 GB of free space is recommended.
+$MinFreeGB        = 100
+$driveLetter      = (Split-Path -Qualifier $HashesDir).TrimEnd(':')
+$driveInfo        = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
+$freeBytes        = if ($driveInfo) { $driveInfo.Free } else { 0 }
+$freeGB           = [math]::Round($freeBytes / 1GB, 1)
+
+if (-not $SkipDownload) {
+    if ($freeGB -lt $MinFreeGB) {
+        Write-Log "Disk space check: ${freeGB} GB free on ${driveLetter}: drive — minimum ${MinFreeGB} GB recommended." -Level ERROR
+        Write-Log "Free up space or change the output location before proceeding." -Level ERROR
+        exit 1
+    }
+    Write-Log "Disk space check: ${freeGB} GB free on ${driveLetter}: (minimum ${MinFreeGB} GB) — OK" -Level SUCCESS
+} else {
+    Write-Log "Disk space: ${freeGB} GB free on ${driveLetter}: (skipping strict check — download skipped)"
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Step 1 – Download NTLM hashes
@@ -310,13 +333,17 @@ if ($binSize -lt $minExpectedSize) {
 Write-Log "Binary sanity check passed: $(Format-Bytes $binSize) from $(Format-Bytes $hashSize) source." -Level SUCCESS
 
 # Remove the source hash text file now that the binary is confirmed good
-Write-Log "Removing source hash text file: $HashFile"
-try {
-    Remove-Item -Path $HashFile -Force
-    Write-Log "Hash text file removed successfully." -Level SUCCESS
-} catch {
-    Write-Log "Failed to remove hash text file: $_" -Level WARN
-    Write-Log "You can delete it manually: $HashFile" -Level WARN
+if ($KeepHashFile) {
+    Write-Log "-KeepHashFile specified — preserving source hash text file: $HashFile" -Level INFO
+} else {
+    Write-Log "Removing source hash text file: $HashFile"
+    try {
+        Remove-Item -Path $HashFile -Force
+        Write-Log "Hash text file removed successfully." -Level SUCCESS
+    } catch {
+        Write-Log "Failed to remove hash text file: $_" -Level WARN
+        Write-Log "You can delete it manually: $HashFile" -Level WARN
+    }
 }
 
 # ─────────────────────────────────────────────────────────────────────────────

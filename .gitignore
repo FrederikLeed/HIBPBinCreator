@@ -1,7 +1,7 @@
 # Auto-generated environment
 config.psd1
 
-# Downloaded hash data and binary output (~10 GB+)
+# Downloaded hash data and binary output (~69 GB hash + ~31 GB bin)
 output/
 
 # Cloned/built tools
