@@ -15,13 +15,17 @@
     .\BinaryCreator.ps1
 
 .EXAMPLE
+    .\BinaryCreator.ps1 -SkipDownload   # skip download if hash file already present
+
+.EXAMPLE
     .\BinaryCreator.ps1 -Parallelism 32   # override download thread count
 #>
 
 [CmdletBinding()]
 param(
     [int]   $Parallelism = 64,
-    [switch]$NoOverwrite      # pass to skip -o flag for the downloader
+    [switch]$NoOverwrite,     # pass to skip -o flag for the downloader
+    [switch]$SkipDownload     # skip download if hash file already exists
 )
 
 Set-StrictMode -Version Latest
@@ -157,50 +161,59 @@ Write-Log "Log file       : $LogFile"
 # ─────────────────────────────────────────────────────────────────────────────
 Write-Step "Step 1/2 – Downloading NTLM hashes  (parallelism: $Parallelism)"
 
-$overwriteFlag = if ($NoOverwrite) { @() } else { @('-o') }
+$dlElapsed = [timespan]::Zero
 
-$downloadArgs = @('-n', $HashBaseName) + $overwriteFlag + @('-p', $Parallelism.ToString())
-$downloadCmd  = "haveibeenpwned-downloader.exe $($downloadArgs -join ' ')"
-
-Write-Log "Changing working directory to: $HashesDir"
-Write-Log "Executing: $downloadCmd"
-Write-Log ''
-
-$dlStart = [datetime]::UtcNow
-$dlExitCode = 0
-
-# Run with live streaming output; cd to hashes dir so the tool writes there
-Push-Location $HashesDir
-try {
-    # Stream every line from the downloader directly to console + log
-    & haveibeenpwned-downloader.exe @downloadArgs 2>&1 | ForEach-Object {
-        $line = $_.ToString()
-        $ts   = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-        Add-Content -Path $LogFile -Value "[$ts] [HIBP]   $line"
-        Write-Host "  $line" -ForegroundColor DarkCyan
+if ($SkipDownload -and (Test-Path $HashFile)) {
+    $hashSize = (Get-Item $HashFile).Length
+    Write-Log "-SkipDownload specified and hash file already exists – skipping download." -Level SUCCESS
+    Write-Log "Hash file size : $(Format-Bytes $hashSize)  ($hashSize bytes)"
+} else {
+    if ($SkipDownload) {
+        Write-Log '-SkipDownload specified but hash file not found – downloading anyway.' -Level WARN
     }
-    $dlExitCode = $LASTEXITCODE
-} finally {
-    Pop-Location
+
+    $overwriteFlag = if ($NoOverwrite) { @() } else { @('-o') }
+    $downloadArgs  = @('-n', $HashBaseName) + $overwriteFlag + @('-p', $Parallelism.ToString())
+    $downloadCmd   = "haveibeenpwned-downloader.exe $($downloadArgs -join ' ')"
+
+    Write-Log "Changing working directory to: $HashesDir"
+    Write-Log "Executing: $downloadCmd"
+    Write-Log ''
+
+    $dlStart    = [datetime]::UtcNow
+    $dlExitCode = 0
+
+    Push-Location $HashesDir
+    try {
+        & haveibeenpwned-downloader.exe @downloadArgs 2>&1 | ForEach-Object {
+            $line = $_.ToString()
+            $ts   = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+            Add-Content -Path $LogFile -Value "[$ts] [HIBP]   $line"
+            Write-Host "  $line" -ForegroundColor DarkCyan
+        }
+        $dlExitCode = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+
+    $dlElapsed = [datetime]::UtcNow - $dlStart
+
+    if ($dlExitCode -ne 0) {
+        Write-Log "haveibeenpwned-downloader exited with code $dlExitCode." -Level ERROR
+        exit $dlExitCode
+    }
+
+    if (-not (Test-Path $HashFile)) {
+        Write-Log "Expected hash file not found after download: $HashFile" -Level ERROR
+        Write-Log 'The downloader may have used a different output path. Check the hashes directory.' -Level WARN
+        exit 1
+    }
+
+    $hashSize = (Get-Item $HashFile).Length
+    Write-Log ''
+    Write-Log "Download complete in $(Format-Elapsed $dlElapsed)." -Level SUCCESS
+    Write-Log "Hash file size : $(Format-Bytes $hashSize)  ($hashSize bytes)" -Level SUCCESS
 }
-
-$dlElapsed = [datetime]::UtcNow - $dlStart
-
-if ($dlExitCode -ne 0) {
-    Write-Log "haveibeenpwned-downloader exited with code $dlExitCode." -Level ERROR
-    exit $dlExitCode
-}
-
-if (-not (Test-Path $HashFile)) {
-    Write-Log "Expected hash file not found after download: $HashFile" -Level ERROR
-    Write-Log 'The downloader may have used a different output path. Check the hashes directory.' -Level WARN
-    exit 1
-}
-
-$hashSize = (Get-Item $HashFile).Length
-Write-Log ''
-Write-Log "Download complete in $(Format-Elapsed $dlElapsed)." -Level SUCCESS
-Write-Log "Hash file size : $(Format-Bytes $hashSize)  ($hashSize bytes)" -Level SUCCESS
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Step 2 – Compress to binary with PsiRepacker
@@ -212,54 +225,37 @@ Write-Log "Output : $BinFile"
 Write-Log "Tool   : $PsiRepackerExe"
 Write-Log ''
 
-$packStart   = [datetime]::UtcNow
-$spinChars   = '|', '/', '-', '\'
-$spinIdx     = 0
+$packStart  = [datetime]::UtcNow
+$spinChars  = '|', '/', '-', '\'
+$spinIdx    = 0
 
-# Start PsiRepacker as a background process so we can show a live spinner
-$psi = [System.Diagnostics.ProcessStartInfo]::new()
-$psi.FileName               = $PsiRepackerExe
-$psi.Arguments              = "`"$HashFile`" `"$BinFile`""
-$psi.UseShellExecute        = $false
-$psi.RedirectStandardOutput = $true
-$psi.RedirectStandardError  = $true
-$psi.CreateNoWindow         = $true
+# Use temp files for stdout/stderr – avoids PowerShell runspace issues with
+# async Process event handlers on background threads.
+$tmpStdout = [System.IO.Path]::GetTempFileName()
+$tmpStderr = [System.IO.Path]::GetTempFileName()
 
-$proc = [System.Diagnostics.Process]::new()
-$proc.StartInfo = $psi
-
-# Collect output asynchronously
-$stdoutLines = [System.Collections.Generic.List[string]]::new()
-$stderrLines = [System.Collections.Generic.List[string]]::new()
-
-$proc.add_OutputDataReceived({ if ($null -ne $args[1].Data) { $stdoutLines.Add($args[1].Data) } })
-$proc.add_ErrorDataReceived({ if ($null -ne $args[1].Data) { $stderrLines.Add($args[1].Data) } })
-
-$proc.Start()        | Out-Null
-$proc.BeginOutputReadLine()
-$proc.BeginErrorReadLine()
+$proc = Start-Process -FilePath $PsiRepackerExe `
+            -ArgumentList "`"$HashFile`" `"$BinFile`"" `
+            -RedirectStandardOutput $tmpStdout `
+            -RedirectStandardError  $tmpStderr `
+            -NoNewWindow -PassThru
 
 # Spinner loop – update every 250 ms while process runs
 $cursorLeft = $Host.UI.RawUI.CursorPosition.X
 $cursorTop  = $Host.UI.RawUI.CursorPosition.Y
 
 while (-not $proc.HasExited) {
-    $elapsed = [datetime]::UtcNow - $packStart
-    $outSize = if (Test-Path $BinFile) { (Get-Item $BinFile).Length } else { 0 }
-
+    $elapsed    = [datetime]::UtcNow - $packStart
+    $outSize    = if (Test-Path $BinFile) { (Get-Item $BinFile).Length } else { 0 }
     $spinChar   = $spinChars[$spinIdx % $spinChars.Count]
     $spinIdx++
-
     $statusLine = "  [$spinChar]  Elapsed: $(Format-Elapsed $elapsed)   Output: $(Format-Bytes $outSize)   "
-
     try {
         $Host.UI.RawUI.CursorPosition = [System.Management.Automation.Host.Coordinates]::new($cursorLeft, $cursorTop)
         Write-Host $statusLine -NoNewline -ForegroundColor DarkYellow
     } catch {
-        # Non-interactive host (e.g. CI) – just write normally
         Write-Host $statusLine -ForegroundColor DarkYellow
     }
-
     Start-Sleep -Milliseconds 250
 }
 
@@ -267,10 +263,13 @@ $proc.WaitForExit()
 $packExitCode = $proc.ExitCode
 $packElapsed  = [datetime]::UtcNow - $packStart
 
-# Clear spinner line
 Write-Host (' ' * 80)
 
 # Flush captured output to log
+$stdoutLines = Get-Content $tmpStdout -ErrorAction SilentlyContinue
+$stderrLines = Get-Content $tmpStderr -ErrorAction SilentlyContinue
+Remove-Item $tmpStdout, $tmpStderr -ErrorAction SilentlyContinue
+
 foreach ($line in $stdoutLines) {
     $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     Add-Content -Path $LogFile -Value "[$ts] [PSI]    $line"

@@ -110,6 +110,7 @@ Downloads the full NTLM hash corpus and compresses it to a binary.
 |---|---|---|
 | `-Parallelism` | `64` | Download thread count passed to `haveibeenpwned-downloader` |
 | `-NoOverwrite` | `$false` | Omit the `-o` flag; downloader will skip existing ranges |
+| `-SkipDownload` | `$false` | Skip the download step if the hash text file already exists on disk |
 
 ---
 
