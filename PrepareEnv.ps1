@@ -11,7 +11,9 @@
                                     installed via winget if not present)
       - haveibeenpwned-downloader  (dotnet global tool)
       - PsiRepacker.exe            (C++ binary; cloned from GitHub and built
-                                    with MSBuild if not already present)
+                                    with MSBuild if not already present;
+                                    use -PsiRepackerPath to skip this and
+                                    point to an existing binary instead)
 
     On success a config.psd1 file is written to the workspace root so that
     BinaryCreator.ps1 can locate every path it needs.
@@ -21,6 +23,10 @@
 
 .EXAMPLE
     .\PrepareEnv.ps1 -Force   # re-runs all checks even if already satisfied
+
+.EXAMPLE
+    .\PrepareEnv.ps1 -PsiRepackerPath 'C:\tools\PsiRepacker.exe'
+    # Skip the clone/build entirely and use an existing binary.
 #>
 
 [CmdletBinding()]
@@ -33,7 +39,10 @@ param(
     [switch]$FolderStructure,  # Step 1 – create folder structure
     [switch]$DotNet,           # Step 2 – check / install .NET SDK
     [switch]$HibpDownloader,   # Step 3 – check / install haveibeenpwned-downloader
-    [switch]$PsiRepacker       # Step 4 – check / clone / build PsiRepacker
+    [switch]$PsiRepacker,      # Step 4 – check / clone / build PsiRepacker
+
+    # ── Supply an existing PsiRepacker.exe (skips clone/build in Step 4) ──────
+    [string]$PsiRepackerPath = ''
 )
 
 Set-StrictMode -Version Latest
@@ -107,7 +116,7 @@ function Test-CommandExists {
 # ─────────────────────────────────────────────────────────────────────────────
 #  Step selection
 # ─────────────────────────────────────────────────────────────────────────────
-$anyExplicit = $All -or $FolderStructure -or $DotNet -or $HibpDownloader -or $PsiRepacker
+$anyExplicit = $All -or $FolderStructure -or $DotNet -or $HibpDownloader -or $PsiRepacker -or ($PsiRepackerPath -ne '')
 
 if (-not $anyExplicit) {
     Write-Host ''
@@ -116,7 +125,7 @@ if (-not $anyExplicit) {
     Write-Host '  [1]  Create folder structure'
     Write-Host '  [2]  Check / install .NET SDK'
     Write-Host '  [3]  Check / install haveibeenpwned-downloader'
-    Write-Host '  [4]  Check / build PsiRepacker'
+    Write-Host '  [4]  Check / build PsiRepacker  (use -PsiRepackerPath to supply an existing binary)'
     Write-Host '  [A]  All steps  (default)' -ForegroundColor Green
     Write-Host ''
     $raw = Read-Host '  Enter numbers (comma-separated) or press Enter for all'
@@ -134,7 +143,7 @@ if (-not $anyExplicit) {
     $runStep1 = [bool]($All -or $FolderStructure)
     $runStep2 = [bool]($All -or $DotNet)
     $runStep3 = [bool]($All -or $HibpDownloader)
-    $runStep4 = [bool]($All -or $PsiRepacker)
+    $runStep4 = [bool]($All -or $PsiRepacker -or ($PsiRepackerPath -ne ''))
 }
 
 Write-Host ''
@@ -282,6 +291,18 @@ $psiRepackerExe = $null
 
 if ($runStep4) {
 Write-Step 'Step 4/4 – Checking PsiRepacker'
+
+# ── If the caller supplied an existing binary, use it directly ───────────────
+if ($PsiRepackerPath -ne '') {
+    if (Test-Path $PsiRepackerPath -PathType Leaf) {
+        $psiRepackerExe = (Resolve-Path $PsiRepackerPath).ProviderPath
+        Write-Log "Using supplied PsiRepacker binary: $psiRepackerExe" -Level SUCCESS
+    } else {
+        Write-Log "Supplied -PsiRepackerPath '$PsiRepackerPath' does not exist or is not a file." -Level ERROR
+        exit 1
+    }
+# ── Otherwise follow the normal clone / build path ───────────────────────────
+} else {
 
 $psiRepackerDir = Join-Path $Dirs.Tools 'PsiRepacker'
 
@@ -438,6 +459,8 @@ To resolve, do one of the following:
     }
 
     } # end else (build required)
+
+}  # end else (clone/build path)
 
 } else {
     Write-Log 'Step 4 (PsiRepacker) skipped.' -Level WARN
