@@ -36,10 +36,10 @@ param(
 
     # ── Granular step selection (omit all three to get the interactive menu) ──
     [switch]$All,              # run every step (same as default)
-    [switch]$FolderStructure,  # Step 1 – create folder structure
-    [switch]$DotNet,           # Step 2 – check / install .NET SDK
-    [switch]$HibpDownloader,   # Step 3 – check / install haveibeenpwned-downloader
-    [switch]$PsiRepacker,      # Step 4 – check / clone / build PsiRepacker
+    [switch]$FolderStructure,  # Step 1 - create folder structure
+    [switch]$DotNet,           # Step 2 - check / install .NET SDK
+    [switch]$HibpDownloader,   # Step 3 - check / install haveibeenpwned-downloader
+    [switch]$PsiRepacker,      # Step 4 - check / clone / build PsiRepacker
 
     # ── Supply an existing PsiRepacker.exe (skips clone/build in Step 4) ──────
     [string]$PsiRepackerPath = ''
@@ -147,20 +147,20 @@ if (-not $anyExplicit) {
 }
 
 Write-Host ''
-Write-Log "Steps selected  – 1:$runStep1  2:$runStep2  3:$runStep3  4:$runStep4"
+Write-Log "Steps selected  - 1:$runStep1  2:$runStep2  3:$runStep3  4:$runStep4"
 
 if ($runStep3 -and -not $runStep2) {
-    Write-Log 'Note: .NET SDK step skipped – .NET SDK must already be installed.' -Level WARN
+    Write-Log 'Note: .NET SDK step skipped - .NET SDK must already be installed.' -Level WARN
 }
 if (($runStep3 -or $runStep4) -and -not $runStep1) {
-    Write-Log 'Note: folder-structure step skipped – required directories must already exist.' -Level WARN
+    Write-Log 'Note: folder-structure step skipped - required directories must already exist.' -Level WARN
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Step 1 – Create folder structure
+#  Step 1 - Create folder structure
 # ─────────────────────────────────────────────────────────────────────────────
 if ($runStep1) {
-    Write-Step 'Step 1/4 – Creating folder structure'
+    Write-Step 'Step 1/4 - Creating folder structure'
 
     foreach ($key in $Dirs.Keys) {
         $path = $Dirs[$key]
@@ -176,10 +176,10 @@ if ($runStep1) {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Step 2 – .NET SDK
+#  Step 2 - .NET SDK
 # ─────────────────────────────────────────────────────────────────────────────
 if ($runStep2) {
-Write-Step 'Step 2/4 – Checking .NET SDK (minimum v8 LTS)'
+Write-Step 'Step 2/4 - Checking .NET SDK (minimum v8 LTS)'
 
 $MinDotnetMajor = 8
 $dotnetOk       = $false
@@ -193,10 +193,10 @@ if (Test-CommandExists 'dotnet') {
         Write-Log ".NET SDK v$rawVer meets the minimum requirement (v$MinDotnetMajor+)." -Level SUCCESS
         $dotnetOk = $true
     } else {
-        Write-Log ".NET SDK v$rawVer is below minimum v$MinDotnetMajor – will attempt upgrade." -Level WARN
+        Write-Log ".NET SDK v$rawVer is below minimum v$MinDotnetMajor - will attempt upgrade." -Level WARN
     }
 } else {
-    Write-Log '.NET SDK not found – will attempt installation.' -Level WARN
+    Write-Log '.NET SDK not found - will attempt installation.' -Level WARN
 }
 
 if (-not $dotnetOk) {
@@ -233,10 +233,10 @@ Then re-run this script.
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Step 3 – haveibeenpwned-downloader dotnet global tool
+#  Step 3 - haveibeenpwned-downloader dotnet global tool
 # ─────────────────────────────────────────────────────────────────────────────
 if ($runStep3) {
-Write-Step 'Step 3/4 – Checking haveibeenpwned-downloader'
+Write-Step 'Step 3/4 - Checking haveibeenpwned-downloader'
 
 $hibpToolName  = 'haveibeenpwned-downloader'
 $hibpInstalled = $false
@@ -270,7 +270,8 @@ You can try manually:
             exit 1
         }
     }
-    Write-Log "$hibpToolName ${action}d successfully." -Level SUCCESS
+    $actionPast = if ($action -eq 'install') { 'installed' } else { 'updated' }
+    Write-Log "$hibpToolName $actionPast successfully." -Level SUCCESS
 }
 
 # Ensure the dotnet tools folder is on PATH for the current session
@@ -285,12 +286,12 @@ if ($env:PATH -notlike "*$dotnetToolsPath*") {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Step 4 – PsiRepacker
+#  Step 4 - PsiRepacker
 # ─────────────────────────────────────────────────────────────────────────────
 $psiRepackerExe = $null
 
 if ($runStep4) {
-Write-Step 'Step 4/4 – Checking PsiRepacker'
+Write-Step 'Step 4/4 - Checking PsiRepacker'
 
 # ── If the caller supplied an existing binary, use it directly ───────────────
 if ($PsiRepackerPath -ne '') {
@@ -319,9 +320,9 @@ if (Test-Path $psiRepackerDir) {
 
 if (-not $psiRepackerExe -or $Force) {
 
-    # 4a – Ensure git is available
+    # 4a - Ensure git is available
     if (-not (Test-CommandExists 'git')) {
-        Write-Log 'git not found – attempting installation via winget...' -Level WARN
+        Write-Log 'git not found - attempting installation via winget...' -Level WARN
 
         if (Test-CommandExists 'winget') {
             & winget install --id Git.Git --accept-source-agreements --accept-package-agreements
@@ -350,7 +351,7 @@ Then re-run this script.
         Write-Log "git detected: $gitVersion" -Level SUCCESS
     }
 
-    # 4b – Clone (or pull if already cloned)
+    # 4b - Clone (or pull if already cloned)
     if (-not (Test-Path $psiRepackerDir)) {
         Write-Log "Cloning PsiRepacker to: $psiRepackerDir"
         & git clone https://github.com/improsec/PsiRepacker.git $psiRepackerDir
@@ -360,13 +361,13 @@ Then re-run this script.
         }
         Write-Log 'Repository cloned successfully.' -Level SUCCESS
     } else {
-        Write-Log 'PsiRepacker directory already present – pulling latest...'
+        Write-Log 'PsiRepacker directory already present - pulling latest...'
         Push-Location $psiRepackerDir
         & git pull --ff-only
         Pop-Location
     }
 
-    # 4b.5 – Re-check: the repo may ship a pre-built binary (no MSBuild needed)
+    # 4b.5 - Re-check: the repo may ship a pre-built binary (no MSBuild needed)
     $prebuilt = Get-ChildItem -Path $psiRepackerDir -Filter 'PsiRepacker.exe' -Recurse -ErrorAction SilentlyContinue |
                 Sort-Object LastWriteTime -Descending |
                 Select-Object -First 1
@@ -380,10 +381,10 @@ Then re-run this script.
     }
 
     if ($skipBuild) {
-        # Nothing to build – fall through to config write
+        # Nothing to build - fall through to config write
     } else {
 
-    # 4c – Locate MSBuild
+    # 4c - Locate MSBuild
     Write-Log 'Locating MSBuild...'
 
     $msbuildExe = $null
@@ -431,7 +432,7 @@ To resolve, do one of the following:
 
     Write-Log "MSBuild found: $msbuildExe"
 
-    # 4d – Build
+    # 4d - Build
     $solution = Join-Path $psiRepackerDir 'PasswordStrengthInsights.sln'
     Write-Log "Building solution: $solution"
     Write-Log "Configuration: Release | Platform: x64"
@@ -445,7 +446,7 @@ To resolve, do one of the following:
     }
     Write-Log 'Build completed successfully.' -Level SUCCESS
 
-    # 4e – Locate the produced binary
+    # 4e - Locate the produced binary
     $found = Get-ChildItem -Path $psiRepackerDir -Filter 'PsiRepacker.exe' -Recurse -ErrorAction SilentlyContinue |
              Sort-Object LastWriteTime -Descending |
              Select-Object -First 1
@@ -459,6 +460,8 @@ To resolve, do one of the following:
     }
 
     } # end else (build required)
+
+}  # end if (-not $psiRepackerExe -or $Force)
 
 }  # end else (clone/build path)
 
@@ -505,7 +508,7 @@ if ($null -ne $psiRepackerExe) {
     $config | Set-Content -Path $configPath -Encoding UTF8
     Write-Log "Config written: $configPath" -Level SUCCESS
 } else {
-    Write-Log 'config.psd1 not written – PsiRepacker path unknown (run Step 4 to resolve).' -Level WARN
+    Write-Log 'config.psd1 not written - PsiRepacker path unknown (run Step 4 to resolve).' -Level WARN
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
