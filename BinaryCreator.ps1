@@ -32,9 +32,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Load config
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+
 $configPath = Join-Path $PSScriptRoot 'config.psd1'
 
 if (-not (Test-Path $configPath)) {
@@ -69,9 +70,9 @@ if ($env:PATH -notlike "*$DotnetToolsDir*") {
     $env:PATH += ";$DotnetToolsDir"
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Logging
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 $RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 $LogFile      = Join-Path $LogsDir "BinaryCreator_$RunTimestamp.log"
 
@@ -124,9 +125,9 @@ function Format-Elapsed {
     return '{0}s' -f [int]$ts.TotalSeconds
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Validate prerequisites
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 Write-Step 'Validating prerequisites'
 
 $hibpExe = Get-Command 'haveibeenpwned-downloader.exe' -ErrorAction SilentlyContinue
@@ -144,9 +145,9 @@ if (-not (Test-Path $PsiRepackerExe)) {
 }
 Write-Log "PsiRepacker.exe           : $PsiRepackerExe" -Level SUCCESS
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  File paths
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 $DateSuffix   = Get-Date -Format 'ddMMyy'
 $HashBaseName = 'pwnedpasswords_ntlm'       # downloader appends _ntlm itself
 $HashFile     = Join-Path $HashesDir "${HashBaseName}.txt"
@@ -157,9 +158,9 @@ Write-Log "Hash text file : $HashFile"
 Write-Log "Binary output  : $BinFile"
 Write-Log "Log file       : $LogFile"
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Disk space pre-check
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # NTLM hashes are ~69 GB, binary output ~31 GB.  During packing both exist
 # simultaneously so ~100 GB of free space is recommended.
 $MinFreeGB        = 100
@@ -179,9 +180,9 @@ if (-not $SkipDownload) {
     Write-Log "Disk space: ${freeGB} GB free on ${driveLetter}: (skipping strict check — download skipped)"
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Step 1 – Download NTLM hashes
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 Write-Step "Step 1/2 – Downloading NTLM hashes  (parallelism: $Parallelism)"
 
 $dlElapsed = [timespan]::Zero
@@ -238,9 +239,9 @@ if ($SkipDownload -and (Test-Path $HashFile)) {
     Write-Log "Hash file size : $(Format-Bytes $hashSize)  ($hashSize bytes)" -Level SUCCESS
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Step 2 – Compress to binary with PsiRepacker
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 Write-Step "Step 2/2 – Compressing to binary  ($BinFileName)"
 
 Write-Log "Input  : $HashFile"
@@ -316,9 +317,9 @@ if (-not (Test-Path $BinFile)) {
 
 $binSize = (Get-Item $BinFile).Length
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Sanity-check the binary, then remove the source text file
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 # Minimum expected binary size: 10% of source (PsiRepacker typically achieves
 # ~55% compression, so anything below 10% indicates a corrupt/empty output).
@@ -346,18 +347,18 @@ if ($KeepHashFile) {
     }
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Summary
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 Write-Step 'Completed'
 
 Write-Log "Packing complete in $(Format-Elapsed $packElapsed)." -Level SUCCESS
 Write-Log ''
-Write-Log '  ┌─ Output ──────────────────────────────────────────────────────'
-Write-Log "  │  File    : $BinFile"
-Write-Log "  │  Size    : $(Format-Bytes $binSize)  ($binSize bytes)"
-Write-Log "  │  Ratio   : $([math]::Round((1 - $binSize / $hashSize) * 100, 1))% reduction from source"
-Write-Log '  └───────────────────────────────────────────────────────────────'
+Write-Log '  ---Output ------------------------------------------------------'
+Write-Log "  -  File    : $BinFile"
+Write-Log "  -  Size    : $(Format-Bytes $binSize)  ($binSize bytes)"
+Write-Log "  -  Ratio   : $([math]::Round((1 - $binSize / $hashSize) * 100, 1))% reduction from source"
+Write-Log '  ----------------------------------------------------------------'
 Write-Log ''
 Write-Log "  Download time : $(Format-Elapsed $dlElapsed)"
 Write-Log "  Pack time     : $(Format-Elapsed $packElapsed)"
