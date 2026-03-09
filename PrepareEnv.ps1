@@ -140,10 +140,11 @@ if (-not $anyExplicit) {
         $runStep4 = ($tokens -contains '4')
     }
 } else {
-    $runStep1 = [bool]($All -or $FolderStructure)
-    $runStep2 = [bool]($All -or $DotNet)
-    $runStep3 = [bool]($All -or $HibpDownloader)
-    $runStep4 = [bool]($All -or $PsiRepacker -or ($PsiRepackerPath -ne ''))
+    $hasPsiPath = ($PsiRepackerPath -ne '')
+    $runStep1 = [bool]($All -or $FolderStructure -or $hasPsiPath)
+    $runStep2 = [bool]($All -or $DotNet         -or $hasPsiPath)
+    $runStep3 = [bool]($All -or $HibpDownloader -or $hasPsiPath)
+    $runStep4 = [bool]($All -or $PsiRepacker    -or $hasPsiPath)
 }
 
 Write-Host ''
