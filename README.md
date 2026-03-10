@@ -22,7 +22,7 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 ## ✅ Prerequisites
 
 | # | Requirement | Auto | Notes |
-|:-:|-------------|:----:|-------|
+| :-: | ------------- | :----: | ------- |
 | 1 | PowerShell 5.1+ / pwsh 7+ | — | Built-in on Windows 10/11 |
 | 2 | [git](https://git-scm.com/downloads) | ✅ | via `winget` |
 | 3 | [.NET SDK 8+](https://dotnet.microsoft.com/download/dotnet/8.0) | ✅ | via `winget` |
@@ -38,7 +38,7 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 ### Phase 1 — `PrepareEnv.ps1`
 
 | Step | Action | Details |
-|:----:|--------|---------|
+| :----: | -------- | --------- |
 | 1 | 📁 Create folder structure | `tools/` · `output/hashes/` · `output/bin/` · `logs/` |
 | 2 | ⚙️ .NET SDK ≥ v8 | Auto-install via `winget` if missing |
 | 3 | 📥 haveibeenpwned-downloader | `dotnet tool install --tool-path tools\` |
@@ -49,7 +49,7 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 ### Phase 2 — `BinaryCreator.ps1`
 
 | Step | Action | Details |
-|:----:|--------|---------|
+| :----: | -------- | --------- |
 | 1 | 💾 Pre-flight | Disk space ≥ 100 GB free · tool validation |
 | 2 | 🌐 Download | 1,048,576 hash ranges · 64 threads · **~25 min** · **~69 GB** |
 | 3 | 🔧 Pack | PsiRepacker.exe · load → sort → save · **~8 min** · **~55% reduction** |
@@ -64,7 +64,7 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 ### `PrepareEnv.ps1`
 
 | Parameter | Default | Description |
-|-----------|---------|-------------|
+| ----------- | --------- | ------------- |
 | `-BaseDir` | Script directory | Root folder for all created paths |
 | `-Force` | `$false` | Re-run all checks even if already satisfied |
 | `-All` | `$false` | Run every step (same as pressing Enter at the menu) |
@@ -77,7 +77,7 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 ### `BinaryCreator.ps1`
 
 | Parameter | Default | Description |
-|-----------|---------|-------------|
+| ----------- | --------- | ------------- |
 | `-Parallelism` | `64` | Download thread count |
 | `-NoOverwrite` | `$false` | Skip overwriting existing hash ranges |
 | `-SkipDownload` | `$false` | Skip download if hash text file already exists |
@@ -87,7 +87,7 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 
 ## 📂 Folder Structure
 
-```
+```text
 hibpbinarycreator/
 ├── PrepareEnv.ps1              # Environment bootstrap
 ├── BinaryCreator.ps1           # Download + pack
@@ -116,7 +116,7 @@ Both scripts write timestamped logs to `logs/` with levels `[INFO]` `[WARN]` `[E
 ## 🔽 Downstream Use
 
 | Use Case | Tool |
-|----------|------|
+| ---------- | ------ |
 | 🔐 AD password audit | [Get-BadPasswords](https://github.com/improsec/Get-BadPasswords) by Improsec |
 | 🔒 Offline hash lookup | Binary file — no API dependency |
 
@@ -127,7 +127,7 @@ Both scripts write timestamped logs to `logs/` with levels `[INFO]` `[WARN]` `[E
 This toolchain is built on the work of others:
 
 | Project | Authors | License |
-|---------|---------|---------|
+| --------- | --------- | --------- |
 | [PwnedPasswordsDownloader](https://github.com/HaveIBeenPwned/PwnedPasswordsDownloader) | [@troyhunt](https://github.com/troyhunt), [@stebet](https://github.com/stebet), [@Barbarrosa](https://github.com/Barbarrosa), [@tghosth](https://github.com/tghosth), [@PrzemyslawKlys](https://github.com/PrzemyslawKlys), [@chipotleyumtum](https://github.com/chipotleyumtum) | BSD-3-Clause |
 | [PsiRepacker](https://github.com/improsec/PsiRepacker) | [@improsec](https://github.com/improsec) (Improsec A/S), [@bytewreck](https://github.com/bytewreck) (Valdemar Carøe) | BSD-3-Clause |
 | [Have I Been Pwned](https://haveibeenpwned.com) | [Troy Hunt](https://www.troyhunt.com) | — |

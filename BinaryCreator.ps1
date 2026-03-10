@@ -39,7 +39,7 @@ $ErrorActionPreference = 'Stop'
 $configPath = Join-Path $PSScriptRoot 'config.psd1'
 
 if (-not (Test-Path $configPath)) {
-    Write-Host '[WARN]  config.psd1 not found – running PrepareEnv.ps1 first...' -ForegroundColor Yellow
+    Write-Host '[WARN]  config.psd1 not found - running PrepareEnv.ps1 first...' -ForegroundColor Yellow
     $prepareScript = Join-Path $PSScriptRoot 'PrepareEnv.ps1'
     if (-not (Test-Path $prepareScript)) {
         Write-Host "[ERROR] PrepareEnv.ps1 not found at: $prepareScript" -ForegroundColor Red
@@ -54,7 +54,7 @@ if (-not (Test-Path $configPath)) {
         Write-Host '[ERROR] PrepareEnv.ps1 completed but config.psd1 was not created.' -ForegroundColor Red
         exit 1
     }
-    Write-Host '[SUCCESS] Environment ready – continuing with BinaryCreator.' -ForegroundColor Green
+    Write-Host '[SUCCESS] Environment ready - continuing with BinaryCreator.' -ForegroundColor Green
 }
 
 $cfg = Import-PowerShellDataFile -Path $configPath
@@ -102,7 +102,7 @@ function Write-Log {
 
 function Write-Step {
     param([string]$Title)
-    $bar   = '─' * 64
+    $bar   = '-' * 64
     $block = "`n$bar`n  $Title`n$bar"
     Write-Host $block -ForegroundColor Magenta
     Add-Content -Path $LogFile -Value $block
@@ -171,29 +171,29 @@ $freeGB           = [math]::Round($freeBytes / 1GB, 1)
 
 if (-not $SkipDownload) {
     if ($freeGB -lt $MinFreeGB) {
-        Write-Log "Disk space check: ${freeGB} GB free on ${driveLetter}: drive — minimum ${MinFreeGB} GB recommended." -Level ERROR
+        Write-Log "Disk space check: ${freeGB} GB free on ${driveLetter}: drive - minimum ${MinFreeGB} GB recommended." -Level ERROR
         Write-Log "Free up space or change the output location before proceeding." -Level ERROR
         exit 1
     }
-    Write-Log "Disk space check: ${freeGB} GB free on ${driveLetter}: (minimum ${MinFreeGB} GB) — OK" -Level SUCCESS
+    Write-Log "Disk space check: ${freeGB} GB free on ${driveLetter}: (minimum ${MinFreeGB} GB) - OK" -Level SUCCESS
 } else {
-    Write-Log "Disk space: ${freeGB} GB free on ${driveLetter}: (skipping strict check — download skipped)"
+    Write-Log "Disk space: ${freeGB} GB free on ${driveLetter}: (skipping strict check - download skipped)"
 }
 
 # -----------------------------------------------------------------------------
-#  Step 1 – Download NTLM hashes
+#  Step 1 - Download NTLM hashes
 # -----------------------------------------------------------------------------
-Write-Step "Step 1/2 – Downloading NTLM hashes  (parallelism: $Parallelism)"
+Write-Step "Step 1/2 - Downloading NTLM hashes  (parallelism: $Parallelism)"
 
 $dlElapsed = [timespan]::Zero
 
 if ($SkipDownload -and (Test-Path $HashFile)) {
     $hashSize = (Get-Item $HashFile).Length
-    Write-Log "-SkipDownload specified and hash file already exists – skipping download." -Level SUCCESS
+    Write-Log "-SkipDownload specified and hash file already exists - skipping download." -Level SUCCESS
     Write-Log "Hash file size : $(Format-Bytes $hashSize)  ($hashSize bytes)"
 } else {
     if ($SkipDownload) {
-        Write-Log '-SkipDownload specified but hash file not found – downloading anyway.' -Level WARN
+        Write-Log '-SkipDownload specified but hash file not found - downloading anyway.' -Level WARN
     }
 
     $overwriteFlag = if ($NoOverwrite) { @() } else { @('-o') }
@@ -240,9 +240,9 @@ if ($SkipDownload -and (Test-Path $HashFile)) {
 }
 
 # -----------------------------------------------------------------------------
-#  Step 2 – Compress to binary with PsiRepacker
+#  Step 2 - Compress to binary with PsiRepacker
 # -----------------------------------------------------------------------------
-Write-Step "Step 2/2 – Compressing to binary  ($BinFileName)"
+Write-Step "Step 2/2 - Compressing to binary  ($BinFileName)"
 
 Write-Log "Input  : $HashFile"
 Write-Log "Output : $BinFile"
@@ -253,7 +253,7 @@ $packStart  = [datetime]::UtcNow
 $spinChars  = '|', '/', '-', '\'
 $spinIdx    = 0
 
-# Use temp files for stdout/stderr – avoids PowerShell runspace issues with
+# Use temp files for stdout/stderr - avoids PowerShell runspace issues with
 # async Process event handlers on background threads.
 $tmpStdout = [System.IO.Path]::GetTempFileName()
 $tmpStderr = [System.IO.Path]::GetTempFileName()
@@ -264,7 +264,7 @@ $proc = Start-Process -FilePath $PsiRepackerExe `
             -RedirectStandardError  $tmpStderr `
             -NoNewWindow -PassThru
 
-# Spinner loop – update every 250 ms while process runs
+# Spinner loop - update every 250 ms while process runs
 $cursorLeft = $Host.UI.RawUI.CursorPosition.X
 $cursorTop  = $Host.UI.RawUI.CursorPosition.Y
 
@@ -335,7 +335,7 @@ Write-Log "Binary sanity check passed: $(Format-Bytes $binSize) from $(Format-By
 
 # Remove the source hash text file now that the binary is confirmed good
 if ($KeepHashFile) {
-    Write-Log "-KeepHashFile specified — preserving source hash text file: $HashFile" -Level INFO
+    Write-Log "-KeepHashFile specified - preserving source hash text file: $HashFile" -Level INFO
 } else {
     Write-Log "Removing source hash text file: $HashFile"
     try {

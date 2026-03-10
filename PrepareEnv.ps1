@@ -34,23 +34,23 @@ param(
     [string]$BaseDir   = $PSScriptRoot,
     [switch]$Force,
 
-    # ── Granular step selection (omit all three to get the interactive menu) ──
+    # -- Granular step selection (omit all three to get the interactive menu) --
     [switch]$All,              # run every step (same as default)
     [switch]$FolderStructure,  # Step 1 - create folder structure
     [switch]$DotNet,           # Step 2 - check / install .NET SDK
     [switch]$HibpDownloader,   # Step 3 - check / install haveibeenpwned-downloader
     [switch]$PsiRepacker,      # Step 4 - check / clone / build PsiRepacker
 
-    # ── Supply an existing PsiRepacker.exe (skips clone/build in Step 4) ──────
+    # -- Supply an existing PsiRepacker.exe (skips clone/build in Step 4) ------
     [string]$PsiRepackerPath = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Folder structure
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 $Dirs = [ordered]@{
     Base   = $BaseDir
     Tools  = Join-Path $BaseDir 'tools'
@@ -60,9 +60,9 @@ $Dirs = [ordered]@{
     Logs   = Join-Path $BaseDir 'logs'
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Logging
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 $LogTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 $LogFile      = Join-Path $Dirs.Logs "PrepareEnv_$LogTimestamp.log"
 
@@ -97,7 +97,7 @@ function Write-Log {
 
 function Write-Step {
     param([string]$Title)
-    $bar = '─' * 64
+    $bar = '-' * 64
     $block = "`n$bar`n  $Title`n$bar"
     Write-Host $block -ForegroundColor Magenta
     if (Test-Path $Dirs.Logs) {
@@ -113,15 +113,15 @@ function Test-CommandExists {
     return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Step selection
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 $anyExplicit = $All -or $FolderStructure -or $DotNet -or $HibpDownloader -or $PsiRepacker -or ($PsiRepackerPath -ne '')
 
 if (-not $anyExplicit) {
     Write-Host ''
     Write-Host '  Which steps would you like to run?' -ForegroundColor Cyan
-    Write-Host '  ──────────────────────────────────────────────────'
+    Write-Host '  --------------------------------------------------'
     Write-Host '  [1]  Create folder structure'
     Write-Host '  [2]  Check / install .NET SDK'
     Write-Host '  [3]  Check / install haveibeenpwned-downloader'
@@ -157,9 +157,9 @@ if (($runStep3 -or $runStep4) -and -not $runStep1) {
     Write-Log 'Note: folder-structure step skipped - required directories must already exist.' -Level WARN
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Step 1 - Create folder structure
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($runStep1) {
     Write-Step 'Step 1/4 - Creating folder structure'
 
@@ -176,9 +176,9 @@ if ($runStep1) {
     Write-Log 'Step 1 (folder structure) skipped.' -Level WARN
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Step 2 - .NET SDK
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($runStep2) {
 Write-Step 'Step 2/4 - Checking .NET SDK (minimum v8 LTS)'
 
@@ -233,9 +233,9 @@ Then re-run this script.
     Write-Log 'Step 2 (.NET SDK) skipped.' -Level WARN
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Step 3 - haveibeenpwned-downloader dotnet tool (installed into tools dir)
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 if ($runStep3) {
 Write-Step 'Step 3/4 - Checking haveibeenpwned-downloader'
 
@@ -286,15 +286,15 @@ if ($env:PATH -notlike "*$hibpToolsDir*") {
     Write-Log 'Step 3 (haveibeenpwned-downloader) skipped.' -Level WARN
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Step 4 - PsiRepacker
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 $psiRepackerExe = $null
 
 if ($runStep4) {
 Write-Step 'Step 4/4 - Checking PsiRepacker'
 
-# ── If the caller supplied an existing binary, use it directly ───────────────
+# -- If the caller supplied an existing binary, use it directly ---------------
 if ($PsiRepackerPath -ne '') {
     if (Test-Path $PsiRepackerPath -PathType Leaf) {
         $psiRepackerExe = (Resolve-Path $PsiRepackerPath).ProviderPath
@@ -303,7 +303,7 @@ if ($PsiRepackerPath -ne '') {
         Write-Log "Supplied -PsiRepackerPath '$PsiRepackerPath' does not exist or is not a file." -Level ERROR
         exit 1
     }
-# ── Otherwise follow the normal clone / build path ───────────────────────────
+# -- Otherwise follow the normal clone / build path ---------------------------
 } else {
 
 $psiRepackerDir = Join-Path $Dirs.Tools 'PsiRepacker'
@@ -483,9 +483,9 @@ To resolve, do one of the following:
     }
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Write config.psd1
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 $configPath = Join-Path $BaseDir 'config.psd1'
 
 $dotnetToolsPath = $Dirs.Tools
@@ -512,9 +512,9 @@ if ($null -ne $psiRepackerExe) {
     Write-Log 'config.psd1 not written - PsiRepacker path unknown (run Step 4 to resolve).' -Level WARN
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 #  Summary
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 Write-Step 'Run complete'
 
 $stepsRun = @()
