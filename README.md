@@ -41,8 +41,8 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 |:----:|--------|---------|
 | 1 | 📁 Create folder structure | `tools/` · `output/hashes/` · `output/bin/` · `logs/` |
 | 2 | ⚙️ .NET SDK ≥ v8 | Auto-install via `winget` if missing |
-| 3 | 📥 haveibeenpwned-downloader | `dotnet tool install --global` |
-| 4 | 🔧 PsiRepacker.exe | `git clone` → use pre-built binary |
+| 3 | 📥 haveibeenpwned-downloader | `dotnet tool install --tool-path tools\` |
+| 4 | 🔧 PsiRepacker.exe | `git clone` or use pre-built binary |
 
 > ✅ **Output:** `config.psd1` — safe to re-run
 
@@ -67,6 +67,12 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 |-----------|---------|-------------|
 | `-BaseDir` | Script directory | Root folder for all created paths |
 | `-Force` | `$false` | Re-run all checks even if already satisfied |
+| `-All` | `$false` | Run every step (same as pressing Enter at the menu) |
+| `-FolderStructure` | `$false` | Run Step 1 only — create folder structure |
+| `-DotNet` | `$false` | Run Step 2 only — check / install .NET SDK |
+| `-HibpDownloader` | `$false` | Run Step 3 only — check / install haveibeenpwned-downloader |
+| `-PsiRepacker` | `$false` | Run Step 4 only — check / clone / build PsiRepacker |
+| `-PsiRepackerPath` | `''` | Path to an existing `PsiRepacker.exe`; skips the clone/build in Step 4 and runs all other steps |
 
 ### `BinaryCreator.ps1`
 
