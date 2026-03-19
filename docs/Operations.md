@@ -2,9 +2,16 @@
 
 ## Running PrepareEnv.ps1
 
-### All steps (default)
+### Check only (default)
 ```powershell
 .\PrepareEnv.ps1 -All
+# Checks all prerequisites, reports missing with install instructions
+```
+
+### Auto-install missing prerequisites
+```powershell
+.\PrepareEnv.ps1 -All -EnableAutoInstall
+# Checks and automatically installs anything missing
 ```
 
 ### Interactive menu
@@ -27,6 +34,7 @@
 | --- | --- | --- |
 | `-BaseDir` | Script directory | Root folder for all created paths |
 | `-Force` | `$false` | Re-run all checks even if already satisfied |
+| `-EnableAutoInstall` | `$false` | Allow automatic installation of missing prerequisites |
 | `-All` | `$false` | Run every step |
 | `-FolderStructure` | `$false` | Step 1 -- create folder structure |
 | `-DotNet` | `$false` | Step 2 -- check / install .NET SDK |

@@ -9,11 +9,13 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 ## Quick Start
 
 ```powershell
-# Option A -- bootstrap first (recommended for first run)
-.\PrepareEnv.ps1
-.\BinaryCreator.ps1
+# 1. Check prerequisites (reports missing with install instructions)
+.\PrepareEnv.ps1 -All
 
-# Option B -- just run it (auto-bootstraps if needed)
+# 2. Or check AND auto-install missing prerequisites
+.\PrepareEnv.ps1 -All -EnableAutoInstall
+
+# 3. Run the pipeline
 .\BinaryCreator.ps1
 ```
 
@@ -28,7 +30,10 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 | 3 | [.NET SDK 8+](https://dotnet.microsoft.com/download/dotnet/8.0) | Yes | via `winget` |
 | 4 | Internet access | -- | ~69 GB download from the HIBP CDN |
 
-**Zero manual setup** -- `PrepareEnv.ps1` handles Python, .NET SDK, and downloader installation via `winget` (Windows 10 1709+ / 11). `BinaryCreator.ps1` invokes `PrepareEnv.ps1` automatically if `config.psd1` is missing.
+By default, `PrepareEnv.ps1` only **checks** prerequisites and reports what is missing with
+manual installation instructions. Pass `-EnableAutoInstall` to allow automatic installation
+via winget or direct download. `BinaryCreator.ps1` invokes `PrepareEnv.ps1` automatically
+if `config.psd1` is missing.
 
 ---
 
@@ -39,11 +44,11 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 | Step | Action | Details |
 | :-: | --- | --- |
 | 1 | Create folder structure | `tools/`, `output/hashes/`, `output/bin/`, `logs/` |
-| 2 | .NET SDK >= v8 | Auto-install via `winget` if missing |
-| 3 | haveibeenpwned-downloader | `dotnet tool install --tool-path tools\` |
+| 2 | Check .NET SDK >= v8 | Reports missing with install guide; auto-installs with `-EnableAutoInstall` |
+| 3 | Check haveibeenpwned-downloader | Reports missing with install command; auto-installs with `-EnableAutoInstall` |
 | 4 | Validate Python + pypsirepacker | Checks Python 3.6+, verifies bundled pypsirepacker import |
 
-**Output:** `config.psd1` -- safe to re-run.
+**Output:** `config.psd1` -- safe to re-run. Missing prerequisites produce a summary with manual install instructions.
 
 ### Phase 2 -- `BinaryCreator.ps1`
 
@@ -66,6 +71,7 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 | --- | --- | --- |
 | `-BaseDir` | Script directory | Root folder for all created paths |
 | `-Force` | `$false` | Re-run all checks even if already satisfied |
+| `-EnableAutoInstall` | `$false` | Allow automatic installation of missing prerequisites |
 | `-All` | `$false` | Run every step (same as pressing Enter at the menu) |
 | `-FolderStructure` | `$false` | Run Step 1 only -- create folder structure |
 | `-DotNet` | `$false` | Run Step 2 only -- check / install .NET SDK |

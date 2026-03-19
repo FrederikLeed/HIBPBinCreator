@@ -34,6 +34,7 @@ Describe 'README content coverage' {
     }
 
     It 'Documents key parameters' -ForEach @(
+        @{ Param = 'EnableAutoInstall' }
         @{ Param = 'OutputPath' }
         @{ Param = 'Parallelism' }
         @{ Param = 'SkipDownload' }
