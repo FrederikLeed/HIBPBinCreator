@@ -58,26 +58,25 @@ Describe 'Operations documents all parameters' {
         @{ Param = 'SkipDownload' }
         @{ Param = 'KeepHashFile' }
         @{ Param = 'Repacker' }
-        @{ Param = 'settings\.json' }
+        @{ Param = 'settings\.psd1' }
     ) {
         $ops | Should -Match $Param -Because "Operations should document $Param"
     }
 }
 
 Describe 'Settings template' {
-    It 'settings.json.example exists and is valid JSON' {
-        $examplePath = Join-Path $ProjectRoot 'settings.json.example'
-        Test-Path $examplePath | Should -BeTrue -Because 'settings.json.example should exist'
-        $content = Get-Content $examplePath -Raw
-        { $content | ConvertFrom-Json } | Should -Not -Throw -Because 'settings.json.example should be valid JSON'
+    It 'settings.psd1.example exists and is valid PowerShell data' {
+        $examplePath = Join-Path $ProjectRoot 'settings.psd1.example'
+        Test-Path $examplePath | Should -BeTrue -Because 'settings.psd1.example should exist'
+        { Import-PowerShellDataFile $examplePath } | Should -Not -Throw -Because 'settings.psd1.example should be valid PSD1'
     }
 
-    It 'settings.json.example contains expected keys' {
-        $examplePath = Join-Path $ProjectRoot 'settings.json.example'
-        $parsed = Get-Content $examplePath -Raw | ConvertFrom-Json
-        $parsed.PSObject.Properties.Name | Should -Contain 'OutputPath'
-        $parsed.PSObject.Properties.Name | Should -Contain 'Parallelism'
-        $parsed.PSObject.Properties.Name | Should -Contain 'KeepHashFile'
+    It 'settings.psd1.example contains expected keys' {
+        $examplePath = Join-Path $ProjectRoot 'settings.psd1.example'
+        $parsed = Import-PowerShellDataFile $examplePath
+        $parsed.Keys | Should -Contain 'OutputPath'
+        $parsed.Keys | Should -Contain 'Parallelism'
+        $parsed.Keys | Should -Contain 'KeepHashFile'
     }
 }
 

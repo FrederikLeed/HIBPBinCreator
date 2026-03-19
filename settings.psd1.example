@@ -1,0 +1,10 @@
+# HIBPBinCreator runtime settings
+# Copy this file to settings.psd1 and edit as needed.
+# Command-line parameters always override these values.
+@{
+    OutputPath   = ''
+    Parallelism  = 64
+    KeepHashFile = $false
+    NoOverwrite  = $false
+    SkipDownload = $false
+}

@@ -491,10 +491,10 @@ if ($pythonExe) {
 }
 
 # -----------------------------------------------------------------------------
-#  Copy settings.json.example to settings.json if not present
+#  Copy settings.psd1.example to settings.psd1 if not present
 # -----------------------------------------------------------------------------
-$settingsExample = Join-Path $PSScriptRoot 'settings.json.example'
-$settingsPath    = Join-Path $BaseDir 'settings.json'
+$settingsExample = Join-Path $PSScriptRoot 'settings.psd1.example'
+$settingsPath    = Join-Path $BaseDir 'settings.psd1'
 
 if ((Test-Path $settingsExample) -and -not (Test-Path $settingsPath)) {
     Copy-Item $settingsExample -Destination $settingsPath

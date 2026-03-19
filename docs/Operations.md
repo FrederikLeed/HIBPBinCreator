@@ -46,20 +46,16 @@ Downloads hashes and converts to binary.
 
 ## Settings File
 
-Copy `settings.json.example` to `settings.json` for persistent defaults
-that apply every run without passing command-line parameters:
+`PrepareEnv.ps1` creates `settings.psd1` from the template automatically.
+Edit it to set persistent defaults that apply every run:
 
 ```powershell
-Copy-Item settings.json.example settings.json
-```
-
-```json
-{
-    "OutputPath": "D:\\HIBP\\bin",
-    "Parallelism": 32,
-    "KeepHashFile": false,
-    "NoOverwrite": false,
-    "SkipDownload": false
+@{
+    OutputPath   = 'D:\HIBP\bin'
+    Parallelism  = 32
+    KeepHashFile = $false
+    NoOverwrite  = $false
+    SkipDownload = $false
 }
 ```
 

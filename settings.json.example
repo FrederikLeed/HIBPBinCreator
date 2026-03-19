@@ -1,7 +1,0 @@
-{
-    "OutputPath": "",
-    "Parallelism": 64,
-    "KeepHashFile": false,
-    "NoOverwrite": false,
-    "SkipDownload": false
-}

@@ -8,7 +8,7 @@
       - Main scripts (PrepareEnv, BinaryCreator, Register-ScheduledTask)
       - Helper library (lib/)
       - pypsirepacker package (pypsirepacker/)
-      - settings.json.example
+      - settings.psd1.example
       - LICENSE
 
     Excludes: tests, docs, diagrams, CI workflows, CLAUDE.md, .git, __pycache__
@@ -45,7 +45,7 @@ try {
         'PrepareEnv.ps1'
         'BinaryCreator.ps1'
         'Register-ScheduledTask.ps1'
-        'settings.json.example'
+        'settings.psd1.example'
         'LICENSE'
         'README.md'
     )
