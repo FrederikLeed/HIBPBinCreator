@@ -17,7 +17,7 @@ OUT_PATH = os.path.join(SCRIPT_DIR, "HIBP-Pipeline.png")
 FONT_PATH = os.environ.get("FONT_PATH", "/tmp/fonts/OpenSans.ttf")
 
 # Canvas
-W, H = 900, 720
+W, H = 900, 770
 BG = "#FFFFFF"
 
 # Colors matching drawio spec
@@ -129,7 +129,7 @@ def main():
     y_pack = 296
     y_bin = 372
     y_check = 456
-    y_done = 610
+    y_done = 660
 
     # ---- Dependencies (left side, purple) ----
     dep_x = left - dep_w - 60
