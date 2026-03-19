@@ -278,16 +278,36 @@ if ($UseLegacyPsiRepacker -or ($PsiRepackerPath -ne '')) {
     $pyInfo = Test-PythonAvailable
 
     if (-not $pyInfo) {
-        Write-Log 'Python 3.6+ not found on PATH.' -Level ERROR
-        Write-Log @'
-Please install Python 3.6 or later:
+        Write-Log 'Python 3.6+ not found on PATH - will attempt installation.' -Level WARN
+
+        if (Test-CommandExists 'winget') {
+            Write-Log 'Installing Python 3 via winget...'
+            & winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements
+            if ($LASTEXITCODE -eq 0) {
+                # Reload PATH so python is available in this session
+                $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
+                            [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+                Write-Log 'Python 3 installed successfully.' -Level SUCCESS
+                $pyInfo = Test-PythonAvailable
+            } else {
+                Write-Log 'winget installation of Python failed.' -Level WARN
+            }
+        } else {
+            Write-Log 'winget is not available - cannot auto-install Python.' -Level WARN
+        }
+
+        if (-not $pyInfo) {
+            Write-Log @'
+Python 3.6+ could not be installed automatically.
+Please install Python 3.6 or later manually:
   https://www.python.org/downloads/
 Ensure python3 or python is on PATH, then re-run this script.
 
 Alternatively, use legacy mode with PsiRepacker.exe:
   .\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath "C:\path\to\PsiRepacker.exe"
 '@ -Level ERROR
-        exit 1
+            exit 1
+        }
     }
 
     $pythonExe = $pyInfo.ExePath

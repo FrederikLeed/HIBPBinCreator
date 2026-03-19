@@ -24,11 +24,11 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 | # | Requirement | Auto-installed | Notes |
 | :-: | --- | :-: | --- |
 | 1 | PowerShell 5.1+ / pwsh 7+ | -- | Built-in on Windows 10/11 |
-| 2 | Python 3.6+ | -- | Required for pypsirepacker (hash conversion) |
+| 2 | Python 3.6+ | Yes | via `winget`; required for pypsirepacker (hash conversion) |
 | 3 | [.NET SDK 8+](https://dotnet.microsoft.com/download/dotnet/8.0) | Yes | via `winget` |
 | 4 | Internet access | -- | ~69 GB download from the HIBP CDN |
 
-**Zero manual setup** -- `PrepareEnv.ps1` handles .NET SDK and downloader installation via `winget` (Windows 10 1709+ / 11). Python must be pre-installed. `BinaryCreator.ps1` invokes `PrepareEnv.ps1` automatically if `config.psd1` is missing.
+**Zero manual setup** -- `PrepareEnv.ps1` handles Python, .NET SDK, and downloader installation via `winget` (Windows 10 1709+ / 11). `BinaryCreator.ps1` invokes `PrepareEnv.ps1` automatically if `config.psd1` is missing.
 
 ---
 
