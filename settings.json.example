@@ -1,5 +1,4 @@
 {
-    "// README": "Copy this file to settings.json and edit as needed. CLI params override these values.",
     "OutputPath": "",
     "Parallelism": 64,
     "KeepHashFile": false,

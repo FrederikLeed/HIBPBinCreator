@@ -94,7 +94,9 @@ $settings = @{}
 if (Test-Path $settingsPath) {
     try {
         $settingsJson = Get-Content $settingsPath -Raw
-        # PS 5.1 compatible JSON parsing
+        # Allow Windows paths with single backslashes (e.g. "D:\test\output")
+        # by escaping lone backslashes before JSON parsing
+        $settingsJson = $settingsJson -replace '\\(?!["\\/bfnrtu])', '\\'
         $settings = @{}
         $parsed = $settingsJson | ConvertFrom-Json
         foreach ($prop in $parsed.PSObject.Properties) {
