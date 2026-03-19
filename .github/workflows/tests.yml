@@ -1,0 +1,56 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  python-tests:
+    name: Python Tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run Python tests
+        run: python -m pytest tests/test_repacker.py -v
+
+  pester-tests:
+    name: Pester Tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -MinimumVersion 5.0 -Force -SkipPublisherCheck
+
+      - name: Run Unit Tests
+        shell: pwsh
+        run: |
+          Invoke-Pester tests/HIBPBinCreator.Unit.Tests.ps1 -Output Detailed -CI
+
+      - name: Run Behavioral Tests
+        shell: pwsh
+        run: |
+          Invoke-Pester tests/HIBPBinCreator.Behavioral.Tests.ps1 -Output Detailed -CI
+
+      - name: Run Docs Tests
+        shell: pwsh
+        run: |
+          Invoke-Pester tests/HIBPBinCreator.Docs.Tests.ps1 -Output Detailed -CI

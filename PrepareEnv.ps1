@@ -6,17 +6,17 @@
 .DESCRIPTION
     Creates the full folder structure, initialises logging, and validates /
     installs all prerequisites needed by BinaryCreator.ps1:
-      - git                        (installed via winget if not present)
       - .NET SDK 8 LTS or later   (required by haveibeenpwned-downloader;
                                     installed via winget if not present)
       - haveibeenpwned-downloader  (dotnet tool; installed into BaseDir\tools)
-      - PsiRepacker.exe            (C++ binary; cloned from GitHub and built
-                                    with MSBuild if not already present;
-                                    use -PsiRepackerPath to skip this and
-                                    point to an existing binary instead)
+      - Python 3.6+               (validates pypsirepacker import)
 
     On success a config.psd1 file is written to the workspace root so that
     BinaryCreator.ps1 can locate every path it needs.
+
+    Legacy mode: use -UseLegacyPsiRepacker to use the C++ PsiRepacker.exe
+    binary instead of pypsirepacker.  Requires -PsiRepackerPath pointing to
+    an existing PsiRepacker.exe.
 
 .EXAMPLE
     .\PrepareEnv.ps1
@@ -25,8 +25,8 @@
     .\PrepareEnv.ps1 -Force   # re-runs all checks even if already satisfied
 
 .EXAMPLE
-    .\PrepareEnv.ps1 -PsiRepackerPath 'C:\tools\PsiRepacker.exe'
-    # Skip the clone/build entirely and use an existing binary.
+    .\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath 'C:\tools\PsiRepacker.exe'
+    # Use the C++ binary instead of Python.
 #>
 
 [CmdletBinding()]
@@ -39,14 +39,20 @@ param(
     [switch]$FolderStructure,  # Step 1 - create folder structure
     [switch]$DotNet,           # Step 2 - check / install .NET SDK
     [switch]$HibpDownloader,   # Step 3 - check / install haveibeenpwned-downloader
-    [switch]$PsiRepacker,      # Step 4 - check / clone / build PsiRepacker
+    [switch]$Repacker,         # Step 4 - validate Python / pypsirepacker
 
-    # -- Supply an existing PsiRepacker.exe (skips clone/build in Step 4) ------
+    # -- Legacy PsiRepacker.exe support (opt-in) ------------------------------
+    [switch]$UseLegacyPsiRepacker,
     [string]$PsiRepackerPath = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# -----------------------------------------------------------------------------
+#  Load shared helpers
+# -----------------------------------------------------------------------------
+. (Join-Path $PSScriptRoot 'lib\HIBPBinCreator.Helpers.ps1')
 
 # -----------------------------------------------------------------------------
 #  Folder structure
@@ -63,60 +69,14 @@ $Dirs = [ordered]@{
 # -----------------------------------------------------------------------------
 #  Logging
 # -----------------------------------------------------------------------------
-$LogTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-$LogFile      = Join-Path $Dirs.Logs "PrepareEnv_$LogTimestamp.log"
-
-function Write-Log {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-        [AllowEmptyString()]
-        [string]$Message,
-
-        [ValidateSet('INFO', 'WARN', 'ERROR', 'SUCCESS')]
-        [string]$Level = 'INFO'
-    )
-    process {
-        $ts    = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-        $entry = "[$ts] [$Level]  $Message"
-
-        # Log dir must exist before first write
-        if (-not (Test-Path $Dirs.Logs)) {
-            New-Item -ItemType Directory -Path $Dirs.Logs -Force | Out-Null
-        }
-        Add-Content -Path $LogFile -Value $entry
-
-        switch ($Level) {
-            'INFO'    { Write-Host $entry -ForegroundColor Cyan    }
-            'WARN'    { Write-Host $entry -ForegroundColor Yellow  }
-            'ERROR'   { Write-Host $entry -ForegroundColor Red     }
-            'SUCCESS' { Write-Host $entry -ForegroundColor Green   }
-        }
-    }
-}
-
-function Write-Step {
-    param([string]$Title)
-    $bar = '-' * 64
-    $block = "`n$bar`n  $Title`n$bar"
-    Write-Host $block -ForegroundColor Magenta
-    if (Test-Path $Dirs.Logs) {
-        Add-Content -Path $LogFile -Value $block
-    } else {
-        New-Item -ItemType Directory -Path $Dirs.Logs -Force | Out-Null
-        Add-Content -Path $LogFile -Value $block
-    }
-}
-
-function Test-CommandExists {
-    param([string]$Name)
-    return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
-}
+$LogTimestamp    = Get-Date -Format 'yyyyMMdd_HHmmss'
+$script:LogFile = Join-Path $Dirs.Logs "PrepareEnv_$LogTimestamp.log"
 
 # -----------------------------------------------------------------------------
 #  Step selection
 # -----------------------------------------------------------------------------
-$anyExplicit = $All -or $FolderStructure -or $DotNet -or $HibpDownloader -or $PsiRepacker -or ($PsiRepackerPath -ne '')
+$hasPsiPath  = ($PsiRepackerPath -ne '')
+$anyExplicit = $All -or $FolderStructure -or $DotNet -or $HibpDownloader -or $Repacker -or $hasPsiPath -or $UseLegacyPsiRepacker
 
 if (-not $anyExplicit) {
     Write-Host ''
@@ -125,7 +85,7 @@ if (-not $anyExplicit) {
     Write-Host '  [1]  Create folder structure'
     Write-Host '  [2]  Check / install .NET SDK'
     Write-Host '  [3]  Check / install haveibeenpwned-downloader'
-    Write-Host '  [4]  Check / build PsiRepacker  (use -PsiRepackerPath to supply an existing binary)'
+    Write-Host '  [4]  Validate Python / pypsirepacker'
     Write-Host '  [A]  All steps  (default)' -ForegroundColor Green
     Write-Host ''
     $raw = Read-Host '  Enter numbers (comma-separated) or press Enter for all'
@@ -140,11 +100,10 @@ if (-not $anyExplicit) {
         $runStep4 = ($tokens -contains '4')
     }
 } else {
-    $hasPsiPath = ($PsiRepackerPath -ne '')
-    $runStep1 = [bool]($All -or $FolderStructure -or $hasPsiPath)
-    $runStep2 = [bool]($All -or $DotNet         -or $hasPsiPath)
-    $runStep3 = [bool]($All -or $HibpDownloader -or $hasPsiPath)
-    $runStep4 = [bool]($All -or $PsiRepacker    -or $hasPsiPath)
+    $runStep1 = [bool]($All -or $FolderStructure -or $hasPsiPath -or $UseLegacyPsiRepacker)
+    $runStep2 = [bool]($All -or $DotNet         -or $hasPsiPath -or $UseLegacyPsiRepacker)
+    $runStep3 = [bool]($All -or $HibpDownloader -or $hasPsiPath -or $UseLegacyPsiRepacker)
+    $runStep4 = [bool]($All -or $Repacker       -or $hasPsiPath -or $UseLegacyPsiRepacker)
 }
 
 Write-Host ''
@@ -287,195 +246,89 @@ if ($env:PATH -notlike "*$hibpToolsDir*") {
 }
 
 # -----------------------------------------------------------------------------
-#  Step 4 - PsiRepacker
+#  Step 4 - Repacker (Python default, legacy PsiRepacker.exe opt-in)
 # -----------------------------------------------------------------------------
-$psiRepackerExe = $null
+$repackerMode       = 'Python'
+$pythonExe          = $null
+$pyPsiRepackerDir   = $null
+$psiRepackerExe     = $null
 
 if ($runStep4) {
-Write-Step 'Step 4/4 - Checking PsiRepacker'
+Write-Step 'Step 4/4 - Validating repacker'
 
-# -- If the caller supplied an existing binary, use it directly ---------------
-if ($PsiRepackerPath -ne '') {
+if ($UseLegacyPsiRepacker -or ($PsiRepackerPath -ne '')) {
+    # -- Legacy mode: PsiRepacker.exe -------------------------------------------
+    $repackerMode = 'Legacy'
+
+    if ($PsiRepackerPath -eq '') {
+        Write-Log '-UseLegacyPsiRepacker specified but no -PsiRepackerPath given.' -Level ERROR
+        Write-Log 'Usage: .\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath "C:\path\to\PsiRepacker.exe"' -Level ERROR
+        exit 1
+    }
+
     if (Test-Path $PsiRepackerPath -PathType Leaf) {
         $psiRepackerExe = (Resolve-Path $PsiRepackerPath).ProviderPath
-        Write-Log "Using supplied PsiRepacker binary: $psiRepackerExe" -Level SUCCESS
+        Write-Log "Using legacy PsiRepacker binary: $psiRepackerExe" -Level SUCCESS
     } else {
         Write-Log "Supplied -PsiRepackerPath '$PsiRepackerPath' does not exist or is not a file." -Level ERROR
         exit 1
     }
-# -- Otherwise follow the normal clone / build path ---------------------------
 } else {
+    # -- Default mode: Python + pypsirepacker -----------------------------------
+    $pyInfo = Test-PythonAvailable
 
-$psiRepackerDir = Join-Path $Dirs.Tools 'PsiRepacker'
+    if (-not $pyInfo) {
+        Write-Log 'Python 3.6+ not found on PATH.' -Level ERROR
+        Write-Log @'
+Please install Python 3.6 or later:
+  https://www.python.org/downloads/
+Ensure python3 or python is on PATH, then re-run this script.
 
-# Look for an already-built binary first
-if (Test-Path $psiRepackerDir) {
-    $found = Get-ChildItem -Path $psiRepackerDir -Filter 'PsiRepacker.exe' -Recurse -ErrorAction SilentlyContinue |
-             Sort-Object LastWriteTime -Descending |
-             Select-Object -First 1
-    if ($found) {
-        $psiRepackerExe = $found.FullName
-        Write-Log "PsiRepacker.exe found: $psiRepackerExe" -Level SUCCESS
+Alternatively, use legacy mode with PsiRepacker.exe:
+  .\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath "C:\path\to\PsiRepacker.exe"
+'@ -Level ERROR
+        exit 1
     }
+
+    $pythonExe = $pyInfo.ExePath
+    Write-Log "Python found: $($pyInfo.Version) at $pythonExe" -Level SUCCESS
+
+    # Validate pypsirepacker import from the bundled package
+    $pyPsiRepackerDir = Join-Path $PSScriptRoot 'pypsirepacker'
+    $parentDir        = $PSScriptRoot
+    $validateCmd      = "import sys; sys.path.insert(0, r'$parentDir'); from pypsirepacker.repacker import repack; print('OK')"
+
+    $validateResult = & $pythonExe -c $validateCmd 2>&1
+    $validateString = ($validateResult | Out-String).Trim()
+
+    if ($validateString -ne 'OK') {
+        Write-Log 'Failed to import pypsirepacker. Output:' -Level ERROR
+        Write-Log $validateString -Level ERROR
+        Write-Log "Ensure the pypsirepacker/ directory exists at: $pyPsiRepackerDir" -Level ERROR
+        exit 1
+    }
+
+    Write-Log "pypsirepacker validated: import OK from $pyPsiRepackerDir" -Level SUCCESS
 }
 
-if (-not $psiRepackerExe -or $Force) {
-
-    # 4a - Ensure git is available
-    if (-not (Test-CommandExists 'git')) {
-        Write-Log 'git not found - attempting installation via winget...' -Level WARN
-
-        if (Test-CommandExists 'winget') {
-            & winget install --id Git.Git --accept-source-agreements --accept-package-agreements
-            if ($LASTEXITCODE -ne 0) {
-                Write-Log @'
-git installation via winget failed.
-Please install Git manually:  https://git-scm.com/downloads
-Then re-run this script.
-'@ -Level ERROR
-                exit 1
-            }
-            # Reload PATH so git is available in this session
-            $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
-                        [System.Environment]::GetEnvironmentVariable('PATH', 'User')
-            Write-Log 'git installed successfully.' -Level SUCCESS
-        } else {
-            Write-Log @'
-winget is not available and git is not installed.
-Please install Git manually:  https://git-scm.com/downloads
-Then re-run this script.
-'@ -Level ERROR
-            exit 1
-        }
-    } else {
-        $gitVersion = (& git --version 2>&1).ToString().Trim()
-        Write-Log "git detected: $gitVersion" -Level SUCCESS
-    }
-
-    # 4b - Clone (or pull if already cloned)
-    if (-not (Test-Path $psiRepackerDir)) {
-        Write-Log "Cloning PsiRepacker to: $psiRepackerDir"
-        & git clone https://github.com/improsec/PsiRepacker.git $psiRepackerDir
-        if ($LASTEXITCODE -ne 0) {
-            Write-Log 'git clone failed.' -Level ERROR
-            exit 1
-        }
-        Write-Log 'Repository cloned successfully.' -Level SUCCESS
-    } else {
-        Write-Log 'PsiRepacker directory already present - pulling latest...'
-        Push-Location $psiRepackerDir
-        & git pull --ff-only
-        Pop-Location
-    }
-
-    # 4b.5 - Re-check: the repo may ship a pre-built binary (no MSBuild needed)
-    $prebuilt = Get-ChildItem -Path $psiRepackerDir -Filter 'PsiRepacker.exe' -Recurse -ErrorAction SilentlyContinue |
-                Sort-Object LastWriteTime -Descending |
-                Select-Object -First 1
-    if ($prebuilt) {
-        $psiRepackerExe = $prebuilt.FullName
-        Write-Log "Pre-built PsiRepacker.exe found in repository: $psiRepackerExe" -Level SUCCESS
-        # Skip MSBuild entirely
-        $skipBuild = $true
-    } else {
-        $skipBuild = $false
-    }
-
-    if ($skipBuild) {
-        # Nothing to build - fall through to config write
-    } else {
-
-    # 4c - Locate MSBuild
-    Write-Log 'Locating MSBuild...'
-
-    $msbuildExe = $null
-
-    # Try vswhere first (most reliable)
-    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    if (Test-Path $vswhere) {
-        $vswhereResult = & $vswhere -latest -requires Microsoft.Component.MSBuild `
-                                    -find 'MSBuild\**\Bin\MSBuild.exe' 2>&1
-        if ($vswhereResult) {
-            $msbuildExe = ($vswhereResult | Select-Object -First 1).ToString().Trim()
-        }
-    }
-
-    # Fallback: well-known paths
-    if (-not $msbuildExe) {
-        $candidates = @(
-            "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe",
-            "${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe",
-            "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe",
-            "${env:ProgramFiles}\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe",
-            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe",
-            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin\MSBuild.exe",
-            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe",
-            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
-        )
-        $msbuildExe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-    }
-
-    if (-not $msbuildExe) {
-        Write-Log @"
-MSBuild.exe was not found. PsiRepacker cannot be built automatically.
-
-To resolve, do one of the following:
-  A) Install Visual Studio 2019 / 2022 (any edition) with the
-     "Desktop development with C++" workload, then re-run this script.
-  B) Install Visual Studio Build Tools:
-       https://visualstudio.microsoft.com/visual-cpp-build-tools/
-  C) Build the solution manually:
-       $psiRepackerDir\PasswordStrengthInsights.sln
-     and place PsiRepacker.exe somewhere under: $psiRepackerDir
-"@ -Level ERROR
-        exit 1
-    }
-
-    Write-Log "MSBuild found: $msbuildExe"
-
-    # 4d - Build
-    $solution = Join-Path $psiRepackerDir 'PasswordStrengthInsights.sln'
-    Write-Log "Building solution: $solution"
-    Write-Log "Configuration: Release | Platform: x64"
-
-    & $msbuildExe $solution /p:Configuration=Release /p:Platform=x64 /m /nologo /verbosity:minimal 2>&1 |
-        ForEach-Object { Write-Log $_ }
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Log 'Build failed. See log output above for details.' -Level ERROR
-        exit 1
-    }
-    Write-Log 'Build completed successfully.' -Level SUCCESS
-
-    # 4e - Locate the produced binary
-    $found = Get-ChildItem -Path $psiRepackerDir -Filter 'PsiRepacker.exe' -Recurse -ErrorAction SilentlyContinue |
-             Sort-Object LastWriteTime -Descending |
-             Select-Object -First 1
-
-    if ($found) {
-        $psiRepackerExe = $found.FullName
-        Write-Log "PsiRepacker.exe built at: $psiRepackerExe" -Level SUCCESS
-    } else {
-        Write-Log 'Build succeeded but PsiRepacker.exe could not be located. Check the MSBuild output.' -Level ERROR
-        exit 1
-    }
-
-    } # end else (build required)
-
-}  # end if (-not $psiRepackerExe -or $Force)
-
-}  # end else (clone/build path)
-
 } else {
-    Write-Log 'Step 4 (PsiRepacker) skipped.' -Level WARN
-    # If a config from a previous run exists, reuse the PsiRepacker path from it
+    Write-Log 'Step 4 (repacker) skipped.' -Level WARN
+
+    # If a config from a previous run exists, reuse settings from it
     $existingConfig = Join-Path $BaseDir 'config.psd1'
     if (Test-Path $existingConfig) {
         try {
             $prev = Import-PowerShellDataFile $existingConfig
-            if ($prev.PsiRepackerExe -and (Test-Path $prev.PsiRepackerExe)) {
+            if ($prev.RepackerMode -eq 'Legacy' -and $prev.PsiRepackerExe -and (Test-Path $prev.PsiRepackerExe)) {
+                $repackerMode   = 'Legacy'
                 $psiRepackerExe = $prev.PsiRepackerExe
                 Write-Log "Reusing existing PsiRepacker path from config: $psiRepackerExe"
+            }
+            if ($prev.PythonExe) {
+                $pythonExe = $prev.PythonExe
+            }
+            if ($prev.PyPsiRepackerDir) {
+                $pyPsiRepackerDir = $prev.PyPsiRepackerDir
             }
         } catch {
             Write-Log "Could not read existing config.psd1: $_" -Level WARN
@@ -490,26 +343,35 @@ $configPath = Join-Path $BaseDir 'config.psd1'
 
 $dotnetToolsPath = $Dirs.Tools
 
+$psiRepackerExeValue = if ($psiRepackerExe) { $psiRepackerExe -replace "'","''" } else { '' }
+$pythonExeValue      = if ($pythonExe)       { $pythonExe -replace "'","''"      } else { '' }
+$pyPsiDirValue       = if ($pyPsiRepackerDir){ $pyPsiRepackerDir -replace "'","''" } else { '' }
+
 $config = @"
 # Auto-generated by PrepareEnv.ps1 on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 # Re-run PrepareEnv.ps1 to refresh.
 @{
-    BaseDir        = '$($Dirs.Base    -replace "'","''")'
-    ToolsDir       = '$($Dirs.Tools   -replace "'","''")'
-    OutputDir      = '$($Dirs.Output  -replace "'","''")'
-    HashesDir      = '$($Dirs.Hashes  -replace "'","''")'
-    BinDir         = '$($Dirs.Bin     -replace "'","''")'
-    LogsDir        = '$($Dirs.Logs    -replace "'","''")'
-    DotnetToolsDir = '$($dotnetToolsPath -replace "'","''")'
-    PsiRepackerExe = '$($psiRepackerExe  -replace "'","''")'
+    BaseDir           = '$($Dirs.Base    -replace "'","''")'
+    ToolsDir          = '$($Dirs.Tools   -replace "'","''")'
+    OutputDir         = '$($Dirs.Output  -replace "'","''")'
+    HashesDir         = '$($Dirs.Hashes  -replace "'","''")'
+    BinDir            = '$($Dirs.Bin     -replace "'","''")'
+    LogsDir           = '$($Dirs.Logs    -replace "'","''")'
+    DotnetToolsDir    = '$($dotnetToolsPath -replace "'","''")'
+    RepackerMode      = '$repackerMode'
+    PythonExe         = '$pythonExeValue'
+    PyPsiRepackerDir  = '$pyPsiDirValue'
+    PsiRepackerExe    = '$psiRepackerExeValue'
 }
 "@
 
-if ($null -ne $psiRepackerExe) {
+$hasRepacker = ($repackerMode -eq 'Legacy' -and $psiRepackerExe) -or ($repackerMode -eq 'Python' -and $pythonExe)
+
+if ($hasRepacker) {
     $config | Set-Content -Path $configPath -Encoding UTF8
     Write-Log "Config written: $configPath" -Level SUCCESS
 } else {
-    Write-Log 'config.psd1 not written - PsiRepacker path unknown (run Step 4 to resolve).' -Level WARN
+    Write-Log 'config.psd1 not written - repacker not configured (run Step 4 to resolve).' -Level WARN
 }
 
 # -----------------------------------------------------------------------------
@@ -521,19 +383,24 @@ $stepsRun = @()
 if ($runStep1) { $stepsRun += '1 (folder structure)' }
 if ($runStep2) { $stepsRun += '2 (.NET SDK)' }
 if ($runStep3) { $stepsRun += '3 (haveibeenpwned-downloader)' }
-if ($runStep4) { $stepsRun += '4 (PsiRepacker)' }
+if ($runStep4) { $stepsRun += '4 (repacker)' }
 
 Write-Log "Steps run: $($stepsRun -join ', ')" -Level SUCCESS
 Write-Log ''
 if ($runStep2) { Write-Log "  .NET SDK              : $(& dotnet --version 2>&1)" }
 if ($runStep3) { Write-Log "  haveibeenpwned-downloader: installed" }
-if ($null -ne $psiRepackerExe) {
+Write-Log "  Repacker mode         : $repackerMode"
+if ($repackerMode -eq 'Python' -and $pythonExe) {
+    Write-Log "  Python                : $pythonExe"
+    Write-Log "  pypsirepacker         : $pyPsiRepackerDir"
+}
+if ($repackerMode -eq 'Legacy' -and $psiRepackerExe) {
     Write-Log "  PsiRepacker.exe       : $psiRepackerExe"
 }
 Write-Log ''
-if ($null -ne $psiRepackerExe) {
+if ($hasRepacker) {
     Write-Log "  Config file           : $configPath"
 }
-Write-Log "  Log file              : $LogFile"
+Write-Log "  Log file              : $script:LogFile"
 Write-Log ''
 Write-Log 'Run BinaryCreator.ps1 to download NTLM hashes and produce the binary.' -Level SUCCESS

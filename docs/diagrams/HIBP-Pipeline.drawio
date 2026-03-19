@@ -1,0 +1,102 @@
+<mxfile host="app.diagrams.net" modified="2026-03-19T00:00:00.000Z" agent="Claude" version="24.0.0" type="device">
+  <diagram id="hibp-pipeline" name="HIBP Binary Creator Pipeline">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="HIBP Binary Creator Pipeline" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="20" width="300" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Tool Dependencies (Purple) -->
+        <mxCell id="dep_dotnet" value=".NET SDK 8+" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_python" value="Python 3.6+" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="40" y="380" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_config" value="config.psd1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="120" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Download Phase (Blue) -->
+        <mxCell id="cdn" value="HIBP CDN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="downloader" value="haveibeenpwned-downloader" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="180" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Grey: text file output -->
+        <mxCell id="textfile" value="pwnedpasswords_ntlm.txt&#xa;(~69 GB)" style="shape=document;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="400" y="290" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Conversion Phase (Green) -->
+        <mxCell id="packer" value="pypsirepacker (Python)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="400" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Grey: binary file output -->
+        <mxCell id="binfile" value="hibpntlmhashes.bin&#xa;(~31 GB)" style="shape=document;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="400" y="500" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Validation (Yellow) -->
+        <mxCell id="sanity" value="Sanity check&#xa;(&gt;=10% of source)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="610" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Done -->
+        <mxCell id="done" value="Done" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="760" width="100" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Flow arrows -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;" edge="1" source="cdn" target="downloader" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;" edge="1" source="downloader" target="textfile" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;" edge="1" source="textfile" target="packer" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;" edge="1" source="packer" target="binfile" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;" edge="1" source="binfile" target="sanity" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;" edge="1" source="sanity" target="done" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Dependency arrows (dashed) -->
+        <mxCell id="d1" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;rounded=1;" edge="1" source="dep_config" target="downloader" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;rounded=1;" edge="1" source="dep_dotnet" target="downloader" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;rounded=1;" edge="1" source="dep_python" target="packer" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Phase labels -->
+        <mxCell id="lbl_download" value="Download Phase" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=3;fontColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="620" y="130" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_convert" value="Conversion Phase" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=3;fontColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="620" y="410" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_validate" value="Validation Phase" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=3;fontColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="620" y="640" width="120" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
