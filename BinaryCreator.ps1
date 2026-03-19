@@ -143,10 +143,17 @@ if (-not $PSBoundParameters.ContainsKey('OutputPath') -or [string]::IsNullOrWhit
     }
 }
 
-$HashesDir      = $cfg.HashesDir
-$BinDir         = if ($OutputPath) { $OutputPath } else { $cfg.BinDir }
-$LogsDir        = $cfg.LogsDir
-$DotnetToolsDir = $cfg.DotnetToolsDir
+# Safe config access helper (StrictMode-compatible for missing keys)
+function Get-CfgValue {
+    param([hashtable]$Cfg, [string]$Key, [string]$Default = '')
+    if ($Cfg.ContainsKey($Key)) { return $Cfg[$Key] }
+    return $Default
+}
+
+$HashesDir      = Get-CfgValue $cfg 'HashesDir'  (Join-Path $PSScriptRoot 'output\hashes')
+$BinDir         = if ($OutputPath) { $OutputPath } else { Get-CfgValue $cfg 'BinDir' (Join-Path $PSScriptRoot 'output\bin') }
+$LogsDir        = Get-CfgValue $cfg 'LogsDir'   (Join-Path $PSScriptRoot 'logs')
+$DotnetToolsDir = Get-CfgValue $cfg 'DotnetToolsDir' (Join-Path $PSScriptRoot 'tools')
 
 # Ensure output directory exists
 if (-not (Test-Path $BinDir)) {
@@ -154,12 +161,12 @@ if (-not (Test-Path $BinDir)) {
 }
 
 # Ensure dotnet tools folder is on PATH
-if ($env:PATH -notlike "*$DotnetToolsDir*") {
+if ($DotnetToolsDir -and $env:PATH -notlike "*$DotnetToolsDir*") {
     $env:PATH += ";$DotnetToolsDir"
 }
 
-# Resolve Python path from config
-$pythonExe = $cfg.PythonExe
+# Resolve Python path from config (may be missing in old config files)
+$pythonExe = Get-CfgValue $cfg 'PythonExe'
 
 # -----------------------------------------------------------------------------
 #  Logging
