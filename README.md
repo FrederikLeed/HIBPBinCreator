@@ -106,12 +106,27 @@ The hash conversion step uses **pypsirepacker**, a Python replacement for the or
 
 ---
 
+## Scheduling
+
+Run `Register-ScheduledTask.ps1` to create a weekly Windows Task Scheduler job:
+
+```powershell
+.\Register-ScheduledTask.ps1                              # Sunday 02:00 (default)
+.\Register-ScheduledTask.ps1 -DayOfWeek Wednesday -Time '04:30'
+.\Register-ScheduledTask.ps1 -Unregister                  # remove the task
+```
+
+Requires **Run as Administrator**. The task runs as SYSTEM with highest privileges.
+
+---
+
 ## Folder Structure
 
 ```text
 HIBPBinCreator/
 ├── PrepareEnv.ps1              # Environment bootstrap
 ├── BinaryCreator.ps1           # Download + pack
+├── Register-ScheduledTask.ps1  # Weekly task registration
 ├── config.psd1                 # Auto-generated paths (git-ignored)
 ├── lib/
 │   └── HIBPBinCreator.Helpers.ps1  # Shared helper functions

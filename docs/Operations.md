@@ -72,23 +72,29 @@
 
 ### Windows Task Scheduler
 
-Create a weekly scheduled task to refresh the HIBP binary:
+Use the included registration script to create a weekly scheduled task:
 
 ```powershell
-$action = New-ScheduledTaskAction `
-    -Execute 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' `
-    -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\HIBPBinCreator\BinaryCreator.ps1"' `
-    -WorkingDirectory 'C:\HIBPBinCreator'
+# Default: every Sunday at 02:00 as SYSTEM
+.\Register-ScheduledTask.ps1
 
-$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At '02:00'
+# Custom schedule
+.\Register-ScheduledTask.ps1 -DayOfWeek Wednesday -Time '04:30'
 
-Register-ScheduledTask `
-    -TaskName 'HIBP Binary Update' `
-    -Action $action `
-    -Trigger $trigger `
-    -RunLevel Highest `
-    -User 'SYSTEM'
+# Remove the task
+.\Register-ScheduledTask.ps1 -Unregister
 ```
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `-TaskName` | `HIBP Binary Update` | Name of the scheduled task |
+| `-DayOfWeek` | `Sunday` | Day of the week to run |
+| `-Time` | `02:00` | Time of day (24h format) |
+| `-ScriptDir` | Script directory | Folder containing BinaryCreator.ps1 |
+| `-Unregister` | `$false` | Remove the task instead of creating it |
+
+The script requires **Run as Administrator** and validates that `BinaryCreator.ps1`
+and `config.psd1` exist before registering.
 
 **Running as SYSTEM:** Python must be installed machine-wide so that SYSTEM can find it.
 `PrepareEnv.ps1` auto-installs Python using two methods:
