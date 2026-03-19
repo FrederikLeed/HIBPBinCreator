@@ -491,6 +491,19 @@ if ($pythonExe) {
 }
 
 # -----------------------------------------------------------------------------
+#  Copy settings.json.example to settings.json if not present
+# -----------------------------------------------------------------------------
+$settingsExample = Join-Path $PSScriptRoot 'settings.json.example'
+$settingsPath    = Join-Path $BaseDir 'settings.json'
+
+if ((Test-Path $settingsExample) -and -not (Test-Path $settingsPath)) {
+    Copy-Item $settingsExample -Destination $settingsPath
+    Write-Log "Settings file created: $settingsPath (edit to customise runtime defaults)" -Level SUCCESS
+} elseif (Test-Path $settingsPath) {
+    Write-Log "Settings file exists: $settingsPath"
+}
+
+# -----------------------------------------------------------------------------
 #  Summary
 # -----------------------------------------------------------------------------
 Write-Step 'Run complete'
