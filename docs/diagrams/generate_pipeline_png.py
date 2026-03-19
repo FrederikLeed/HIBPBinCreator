@@ -134,12 +134,6 @@ def main():
     # ---- Dependencies (left side, purple) ----
     dep_x = left - dep_w - 60
 
-    # config.psd1
-    dep_y1 = y_cdn + 10
-    rr(draw, [dep_x, dep_y1, dep_x + dep_w, dep_y1 + dep_h], PURPLE["bg"], PURPLE["border"], r=6)
-    center_text(draw, dep_x, dep_y1 + 9, dep_w, "config.psd1", fonts["dep"], "#333333")
-    draw_dashed_arrow(draw, dep_x + dep_w, dep_y1 + dep_h // 2, left, y_dl + node_h // 2, PURPLE["border"])
-
     # .NET SDK 8+
     dep_y2 = y_dl + 5
     rr(draw, [dep_x, dep_y2, dep_x + dep_w, dep_y2 + dep_h], PURPLE["bg"], PURPLE["border"], r=6)

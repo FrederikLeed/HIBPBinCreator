@@ -17,9 +17,6 @@
         <mxCell id="dep_python" value="Python 3.6+" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=2;" vertex="1" parent="1">
           <mxGeometry x="40" y="380" width="120" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="dep_config" value="config.psd1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=2;" vertex="1" parent="1">
-          <mxGeometry x="40" y="100" width="120" height="40" as="geometry" />
-        </mxCell>
 
         <!-- Download Phase (Blue) -->
         <mxCell id="cdn" value="HIBP CDN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
@@ -75,9 +72,6 @@
         </mxCell>
 
         <!-- Dependency arrows (dashed) -->
-        <mxCell id="d1" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;rounded=1;" edge="1" source="dep_config" target="downloader" parent="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
         <mxCell id="d2" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;rounded=1;" edge="1" source="dep_dotnet" target="downloader" parent="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
