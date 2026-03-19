@@ -51,7 +51,6 @@ HIBPBinCreator/
 ├── PrepareEnv.ps1              # Environment bootstrap (check / install)
 ├── BinaryCreator.ps1           # Download + convert pipeline
 ├── Register-ScheduledTask.ps1  # Weekly task registration
-├── settings.psd1.example       # Runtime settings template
 ├── lib/
 │   └── HIBPBinCreator.Helpers.ps1
 ├── pypsirepacker/              # Bundled Python hash converter
@@ -65,8 +64,7 @@ HIBPBinCreator/
 ├── docs/
 │   ├── Architecture.md, Operations.md, Troubleshooting.md
 │   └── diagrams/
-├── config.psd1                 # Auto-generated (git-ignored)
-├── settings.psd1               # User settings (git-ignored)
+├── config.psd1                 # Auto-generated, user-editable settings section (git-ignored)
 ├── output/                     # git-ignored
 │   ├── hashes/                 # ~69 GB text (auto-deleted after conversion)
 │   └── bin/                    # Final .bin output (~31 GB)
@@ -91,6 +89,6 @@ Written by `PrepareEnv.ps1`. Do not edit manually.
 | `PythonExe` | Path to Python executable |
 | `PyPsiRepackerDir` | Path to pypsirepacker package |
 
-### settings.psd1 (user-editable)
+### Settings section (user-editable)
 
-Optional persistent runtime settings. See [Operations](Operations.md#settings-file).
+The bottom of `config.psd1` contains user-editable settings. See [Operations](Operations.md#settings).

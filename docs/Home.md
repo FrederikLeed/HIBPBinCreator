@@ -16,4 +16,4 @@ Downloads the full Have I Been Pwned NTLM password hash list and compresses it i
 - [Pipeline diagram](diagrams/HIBP-Pipeline.png) -- visual overview
 - [Binary format](Architecture.md#binary-format-specification) -- `.bin` file structure
 - [Scheduling](Operations.md#scheduling) -- Windows Task Scheduler setup
-- [Settings file](Operations.md#settings-file) -- persistent runtime config
+- [Settings](Operations.md#settings) -- persistent runtime config in config.psd1

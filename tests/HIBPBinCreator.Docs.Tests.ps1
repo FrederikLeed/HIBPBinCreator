@@ -58,25 +58,9 @@ Describe 'Operations documents all parameters' {
         @{ Param = 'SkipDownload' }
         @{ Param = 'KeepHashFile' }
         @{ Param = 'Repacker' }
-        @{ Param = 'settings\.psd1' }
+        @{ Param = 'config\.psd1' }
     ) {
         $ops | Should -Match $Param -Because "Operations should document $Param"
-    }
-}
-
-Describe 'Settings template' {
-    It 'settings.psd1.example exists and is valid PowerShell data' {
-        $examplePath = Join-Path $ProjectRoot 'settings.psd1.example'
-        Test-Path $examplePath | Should -BeTrue -Because 'settings.psd1.example should exist'
-        { Import-PowerShellDataFile $examplePath } | Should -Not -Throw -Because 'settings.psd1.example should be valid PSD1'
-    }
-
-    It 'settings.psd1.example contains expected keys' {
-        $examplePath = Join-Path $ProjectRoot 'settings.psd1.example'
-        $parsed = Import-PowerShellDataFile $examplePath
-        $parsed.Keys | Should -Contain 'OutputPath'
-        $parsed.Keys | Should -Contain 'Parallelism'
-        $parsed.Keys | Should -Contain 'KeepHashFile'
     }
 }
 
