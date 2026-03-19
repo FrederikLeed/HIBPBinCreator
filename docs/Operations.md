@@ -1,34 +1,14 @@
 # Operations
 
-## Running PrepareEnv.ps1
+## PrepareEnv.ps1
 
-### Check only (default)
+Checks prerequisites and optionally installs missing ones.
+
 ```powershell
-.\PrepareEnv.ps1 -All
-# Checks all prerequisites, reports missing with install instructions
+.\PrepareEnv.ps1 -All                       # check only (default)
+.\PrepareEnv.ps1 -All -EnableAutoInstall     # check + auto-install
+.\PrepareEnv.ps1                             # interactive menu
 ```
-
-### Auto-install missing prerequisites
-```powershell
-.\PrepareEnv.ps1 -All -EnableAutoInstall
-# Checks and automatically installs anything missing
-```
-
-### Interactive menu
-```powershell
-.\PrepareEnv.ps1
-# Presents a numbered menu to select individual steps
-```
-
-### Individual steps
-```powershell
-.\PrepareEnv.ps1 -FolderStructure   # Step 1 only
-.\PrepareEnv.ps1 -DotNet            # Step 2 only
-.\PrepareEnv.ps1 -HibpDownloader    # Step 3 only
-.\PrepareEnv.ps1 -Repacker          # Step 4 only
-```
-
-### Parameters
 
 | Parameter | Default | Description |
 | --- | --- | --- |
@@ -37,40 +17,22 @@
 | `-EnableAutoInstall` | `$false` | Allow automatic installation of missing prerequisites |
 | `-All` | `$false` | Run every step |
 | `-FolderStructure` | `$false` | Step 1 -- create folder structure |
-| `-DotNet` | `$false` | Step 2 -- check / install .NET SDK |
-| `-HibpDownloader` | `$false` | Step 3 -- check / install haveibeenpwned-downloader |
+| `-DotNet` | `$false` | Step 2 -- check .NET SDK |
+| `-HibpDownloader` | `$false` | Step 3 -- check haveibeenpwned-downloader |
 | `-Repacker` | `$false` | Step 4 -- validate Python / pypsirepacker |
 
 ---
 
-## Running BinaryCreator.ps1
+## BinaryCreator.ps1
 
-### Standard run
+Downloads hashes and converts to binary.
+
 ```powershell
-.\BinaryCreator.ps1
+.\BinaryCreator.ps1                                    # standard run
+.\BinaryCreator.ps1 -OutputPath 'D:\HIBP\bin'          # custom output
+.\BinaryCreator.ps1 -SkipDownload                      # reuse existing hash file
+.\BinaryCreator.ps1 -Parallelism 32 -KeepHashFile      # custom parallelism, keep text
 ```
-
-### Custom output path
-```powershell
-.\BinaryCreator.ps1 -OutputPath 'D:\HIBP\bin'
-```
-
-### Skip download (reuse existing hash file)
-```powershell
-.\BinaryCreator.ps1 -SkipDownload
-```
-
-### Custom parallelism
-```powershell
-.\BinaryCreator.ps1 -Parallelism 32
-```
-
-### Keep hash file after packing
-```powershell
-.\BinaryCreator.ps1 -KeepHashFile
-```
-
-### Parameters
 
 | Parameter | Default | Description |
 | --- | --- | --- |
@@ -80,36 +42,42 @@
 | `-SkipDownload` | `$false` | Skip download if hash file exists |
 | `-KeepHashFile` | `$false` | Keep source text file after packing |
 
-### Settings file
+---
 
-Copy `settings.json.example` to `settings.json` to set persistent defaults
+## Settings File
+
+Copy `settings.json.example` to `settings.json` for persistent defaults
 that apply every run without passing command-line parameters:
 
 ```powershell
 Copy-Item settings.json.example settings.json
-# Edit settings.json with your preferred values
 ```
 
-Command-line parameters always override settings file values. This is
-especially useful for scheduled tasks where the task definition stays fixed.
+```json
+{
+    "OutputPath": "D:\\HIBP\\bin",
+    "Parallelism": 32,
+    "KeepHashFile": false,
+    "NoOverwrite": false,
+    "SkipDownload": false
+}
+```
+
+Command-line parameters always override settings file values.
+Useful for scheduled tasks where the task definition stays fixed.
 
 ---
 
 ## Scheduling
 
-### Windows Task Scheduler
+### Register-ScheduledTask.ps1
 
-Use the included registration script to create a weekly scheduled task:
+Creates a weekly Windows Task Scheduler job running as SYSTEM.
 
 ```powershell
-# Default: every Sunday at 02:00 as SYSTEM
-.\Register-ScheduledTask.ps1
-
-# Custom schedule
+.\Register-ScheduledTask.ps1                              # Sunday 02:00
 .\Register-ScheduledTask.ps1 -DayOfWeek Wednesday -Time '04:30'
-
-# Remove the task
-.\Register-ScheduledTask.ps1 -Unregister
+.\Register-ScheduledTask.ps1 -Unregister                  # remove the task
 ```
 
 | Parameter | Default | Description |
@@ -120,16 +88,18 @@ Use the included registration script to create a weekly scheduled task:
 | `-ScriptDir` | Script directory | Folder containing BinaryCreator.ps1 |
 | `-Unregister` | `$false` | Remove the task instead of creating it |
 
-The script requires **Run as Administrator** and validates that `BinaryCreator.ps1`
+Requires **Run as Administrator**. Validates that `BinaryCreator.ps1`
 and `config.psd1` exist before registering.
 
-**Running as SYSTEM:** Python must be installed machine-wide so that SYSTEM can find it.
-`PrepareEnv.ps1` auto-installs Python using two methods:
-1. `winget install --scope machine` (preferred, available on desktop Windows)
-2. Direct download from python.org with silent install (fallback for servers without winget)
+### Running as SYSTEM
 
-The `Test-PythonAvailable` helper also probes `Program Files\Python3xx\` paths
-to find Python even when it is not on SYSTEM's PATH.
+Python must be installed machine-wide so SYSTEM can find it.
+With `-EnableAutoInstall`, PrepareEnv.ps1 installs Python using:
+1. `winget install --scope machine` (preferred)
+2. Direct download from python.org (fallback for servers without winget)
+
+The `Test-PythonAvailable` helper probes `C:\Program Files\Python3xx\`
+paths to find Python even when it is not on SYSTEM's PATH.
 
 ---
 
@@ -142,5 +112,5 @@ to find Python even when it is not on SYSTEM's PATH.
 | After cleanup | ~31 GB (binary only) |
 
 - Minimum recommended free space: **100 GB**
-- The text file is automatically deleted after successful packing (use `-KeepHashFile` to preserve)
-- Old binary files in `output\bin\` are not automatically deleted -- remove manually as needed
+- Text file is auto-deleted after successful packing (use `-KeepHashFile` to preserve)
+- Old binary files in `output\bin\` are not auto-deleted -- remove manually as needed

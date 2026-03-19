@@ -2,15 +2,27 @@
 
 ## Pipeline Overview
 
-The HIBP Binary Creator pipeline has two main phases:
+![Pipeline diagram](diagrams/HIBP-Pipeline.png)
 
-1. **Download phase:** Retrieves all NTLM hash ranges from the HIBP CDN using `haveibeenpwned-downloader`. Output: a ~69 GB sorted text file (`pwnedpasswords_ntlm.txt`).
+The pipeline has two main phases:
 
-2. **Conversion phase:** Converts the text file to packed binary format using `pypsirepacker` (Python). Output: a ~31 GB binary file (`hibpntlmhashes<ddMMyy>.bin`).
+1. **Download** -- retrieves all NTLM hash ranges from the HIBP CDN using `haveibeenpwned-downloader`. Output: a ~69 GB sorted text file.
+
+2. **Conversion** -- converts the text file to packed binary using `pypsirepacker` (Python, streaming, near-zero memory). Output: a ~31 GB binary file.
+
+## Components
+
+| Component | Description |
+| --- | --- |
+| `PrepareEnv.ps1` | Validates prerequisites, optionally installs missing tools, writes `config.psd1` |
+| `BinaryCreator.ps1` | Downloads hashes, converts to binary, validates output |
+| `Register-ScheduledTask.ps1` | Creates weekly Windows Task Scheduler job |
+| `lib/HIBPBinCreator.Helpers.ps1` | Shared functions (`Write-Log`, `Format-Bytes`, `Test-PythonAvailable`, etc.) |
+| `pypsirepacker/` | Bundled Python hash converter (BSD-3-Clause, from [PyPsiRepacker](https://github.com/FrederikLeed/PyPsiRepacker)) |
 
 ## Binary Format Specification
 
-The `.bin` file uses a simple packed format compatible with Get-BadPasswords and ADTiering's `Search-ADTHashBinary`:
+The `.bin` file uses a simple packed format compatible with [Get-BadPasswords](https://github.com/improsec/Get-BadPasswords) and ADTiering's `Search-ADTHashBinary`:
 
 ```
 Offset  Size     Description
@@ -19,48 +31,66 @@ Offset  Size     Description
 8       16 each  NTLM hash entries (raw bytes, sorted ascending)
 ```
 
-- Each text line `<32-char hex hash>:<count>` becomes 16 bytes (the hex hash decoded to binary).
-- The `:count` suffix is discarded -- only hash presence matters for lookups.
-- Entries are stored in sorted order (same as the source file) to enable binary search.
-- Total file size = 8 + (entry_count * 16).
+- Each text line `<32-char hex hash>:<count>` becomes 16 bytes (hex decoded to binary)
+- The `:count` suffix is discarded -- only hash presence matters for lookups
+- Entries are sorted to enable binary search
+- Total file size = 8 + (entry_count * 16)
 
 ### Example
 
-For a file with 2 entries:
 ```
 Header: 02 00 00 00 00 00 00 00  (count = 2, uint64 LE)
 Entry1: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 AA  (16 bytes)
 Entry2: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF  (16 bytes)
 ```
 
-## Components
+## Folder Structure
 
-### PrepareEnv.ps1
-Environment bootstrapper. Validates prerequisites (Python, .NET SDK, haveibeenpwned-downloader), installs missing tools via winget, writes `config.psd1`.
+```text
+HIBPBinCreator/
+├── PrepareEnv.ps1              # Environment bootstrap (check / install)
+├── BinaryCreator.ps1           # Download + convert pipeline
+├── Register-ScheduledTask.ps1  # Weekly task registration
+├── settings.json.example       # Runtime settings template
+├── lib/
+│   └── HIBPBinCreator.Helpers.ps1
+├── pypsirepacker/              # Bundled Python hash converter
+│   ├── repacker.py
+│   ├── __main__.py
+│   ├── __init__.py
+│   └── LICENSE                 # BSD-3-Clause
+├── tests/
+│   ├── fixtures/               # Test data (sample hashes + binary)
+│   └── *.Tests.ps1, test_repacker.py
+├── docs/
+│   ├── Architecture.md, Operations.md, Troubleshooting.md
+│   └── diagrams/
+├── config.psd1                 # Auto-generated (git-ignored)
+├── settings.json               # User settings (git-ignored)
+├── output/                     # git-ignored
+│   ├── hashes/                 # ~69 GB text (auto-deleted after conversion)
+│   └── bin/                    # Final .bin output (~31 GB)
+├── tools/                      # git-ignored (dotnet tools)
+└── logs/                       # git-ignored
+```
 
-### BinaryCreator.ps1
-Main pipeline script. Reads `config.psd1`, downloads hashes, converts to binary with pypsirepacker, validates output.
+## Config Schema
 
-### lib/HIBPBinCreator.Helpers.ps1
-Shared functions: `Write-Log`, `Write-Step`, `Format-Bytes`, `Format-Elapsed`, `Test-CommandExists`, `Test-PythonAvailable`.
+### config.psd1 (auto-generated)
 
-### pypsirepacker/
-Bundled Python package for hash conversion. Pure Python, zero dependencies, streaming with near-zero memory usage. Originally from the [PyPsiRepacker](https://github.com/FrederikLeed/PyPsiRepacker) repository.
+Written by `PrepareEnv.ps1`. Do not edit manually.
 
-Key function: `repack(input_path, output_path, verify_sort=True) -> int`
+| Key | Description |
+| --- | --- |
+| `BaseDir` | Root directory for all paths |
+| `ToolsDir` | Installed tools directory |
+| `HashesDir` | Downloaded hash text files |
+| `BinDir` | Output binary files |
+| `LogsDir` | Log files |
+| `DotnetToolsDir` | dotnet tools directory |
+| `PythonExe` | Path to Python executable |
+| `PyPsiRepackerDir` | Path to pypsirepacker package |
 
-## Config Schema (config.psd1)
+### settings.json (user-editable)
 
-Auto-generated by `PrepareEnv.ps1`:
-
-| Key | Type | Description |
-| --- | --- | --- |
-| `BaseDir` | string | Root directory for all paths |
-| `ToolsDir` | string | Directory for installed tools |
-| `OutputDir` | string | Parent of hashes/ and bin/ |
-| `HashesDir` | string | Directory for downloaded hash text files |
-| `BinDir` | string | Directory for output binary files |
-| `LogsDir` | string | Directory for log files |
-| `DotnetToolsDir` | string | Directory containing dotnet tools |
-| `PythonExe` | string | Path to Python executable |
-| `PyPsiRepackerDir` | string | Path to pypsirepacker package directory |
+Optional persistent runtime settings. See [Operations](Operations.md#settings-file).

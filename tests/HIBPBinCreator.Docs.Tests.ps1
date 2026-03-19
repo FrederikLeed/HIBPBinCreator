@@ -29,23 +29,38 @@ Describe 'README content coverage' {
         $readme = Get-Content (Join-Path $ProjectRoot 'README.md') -Raw
     }
 
-    It 'Mentions Python / pypsirepacker' {
+    It 'Mentions pypsirepacker' {
         $readme | Should -Match 'pypsirepacker' -Because 'README should mention pypsirepacker'
     }
 
-    It 'Documents key parameters' -ForEach @(
+    It 'Mentions EnableAutoInstall' {
+        $readme | Should -Match 'EnableAutoInstall' -Because 'README should mention -EnableAutoInstall'
+    }
+
+    It 'Links to documentation pages' -ForEach @(
+        @{ Page = 'Architecture' }
+        @{ Page = 'Operations' }
+        @{ Page = 'Troubleshooting' }
+    ) {
+        $readme | Should -Match $Page -Because "README should link to $Page"
+    }
+}
+
+Describe 'Operations documents all parameters' {
+    BeforeAll {
+        $ops = Get-Content (Join-Path $ProjectRoot 'docs/Operations.md') -Raw
+    }
+
+    It 'Documents <Param>' -ForEach @(
         @{ Param = 'EnableAutoInstall' }
         @{ Param = 'OutputPath' }
         @{ Param = 'Parallelism' }
         @{ Param = 'SkipDownload' }
         @{ Param = 'KeepHashFile' }
         @{ Param = 'Repacker' }
+        @{ Param = 'settings\.json' }
     ) {
-        $readme | Should -Match $Param -Because "README should document -$Param"
-    }
-
-    It 'Documents settings.json' {
-        $readme | Should -Match 'settings\.json' -Because 'README should document settings.json'
+        $ops | Should -Match $Param -Because "Operations should document $Param"
     }
 }
 
@@ -64,6 +79,7 @@ Describe 'Settings template' {
         $parsed.PSObject.Properties.Name | Should -Contain 'Parallelism'
         $parsed.PSObject.Properties.Name | Should -Contain 'KeepHashFile'
     }
+}
 
 Describe 'Diagram files' {
     It 'HIBP-Pipeline.drawio exists' {
