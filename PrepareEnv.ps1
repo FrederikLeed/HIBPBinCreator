@@ -248,22 +248,53 @@ Write-Step 'Step 4/4 - Validating Python and pypsirepacker'
 $pyInfo = Test-PythonAvailable
 
 if (-not $pyInfo) {
-    Write-Log 'Python 3.6+ not found on PATH - will attempt installation.' -Level WARN
+    Write-Log 'Python 3.6+ not found - will attempt installation.' -Level WARN
 
+    $pythonInstalled = $false
+
+    # Try winget first (available on Windows 10 1709+ / 11 desktop)
     if (Test-CommandExists 'winget') {
         Write-Log 'Installing Python 3 machine-wide via winget...'
         & winget install Python.Python.3.12 --scope machine --accept-source-agreements --accept-package-agreements
         if ($LASTEXITCODE -eq 0) {
-            # Reload PATH so python is available in this session
-            $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
-                        [System.Environment]::GetEnvironmentVariable('PATH', 'User')
-            Write-Log 'Python 3 installed successfully.' -Level SUCCESS
-            $pyInfo = Test-PythonAvailable
+            $pythonInstalled = $true
         } else {
-            Write-Log 'winget installation of Python failed.' -Level WARN
+            Write-Log 'winget installation of Python failed - trying direct download.' -Level WARN
         }
-    } else {
-        Write-Log 'winget is not available - cannot auto-install Python.' -Level WARN
+    }
+
+    # Fallback: download installer from python.org and run silently
+    if (-not $pythonInstalled) {
+        Write-Log 'Downloading Python 3.12 installer from python.org...'
+        $installerUrl  = 'https://www.python.org/ftp/python/3.12.8/python-3.12.8-amd64.exe'
+        $installerPath = Join-Path $Dirs.Tools 'python-3.12-installer.exe'
+
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            (New-Object System.Net.WebClient).DownloadFile($installerUrl, $installerPath)
+            Write-Log "Downloaded installer to: $installerPath" -Level SUCCESS
+
+            Write-Log 'Running Python installer (silent, machine-wide, add to PATH)...'
+            $installArgs = '/quiet', 'InstallAllUsers=1', 'PrependPath=1', 'Include_launcher=1'
+            $proc = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru
+            if ($proc.ExitCode -eq 0) {
+                $pythonInstalled = $true
+            } else {
+                Write-Log "Python installer exited with code $($proc.ExitCode)." -Level WARN
+            }
+
+            Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+        } catch {
+            Write-Log "Failed to download Python installer: $_" -Level WARN
+        }
+    }
+
+    if ($pythonInstalled) {
+        # Reload PATH so python is available in this session
+        $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
+                    [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+        Write-Log 'Python 3 installed successfully.' -Level SUCCESS
+        $pyInfo = Test-PythonAvailable
     }
 
     if (-not $pyInfo) {
@@ -271,6 +302,7 @@ if (-not $pyInfo) {
 Python 3.6+ could not be installed automatically.
 Please install Python 3.6 or later manually:
   https://www.python.org/downloads/
+Use "Install for all users" so that SYSTEM can find it.
 Ensure python3 or python is on PATH, then re-run this script.
 '@ -Level ERROR
         exit 1

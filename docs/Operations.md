@@ -90,9 +90,12 @@ Register-ScheduledTask `
     -User 'SYSTEM'
 ```
 
-**Running as SYSTEM:** Python must be installed machine-wide (`--scope machine`) so
-that SYSTEM can find it. `PrepareEnv.ps1` installs Python with `winget install --scope machine`
-by default. The `Test-PythonAvailable` helper also probes `Program Files\Python3xx\` paths
+**Running as SYSTEM:** Python must be installed machine-wide so that SYSTEM can find it.
+`PrepareEnv.ps1` auto-installs Python using two methods:
+1. `winget install --scope machine` (preferred, available on desktop Windows)
+2. Direct download from python.org with silent install (fallback for servers without winget)
+
+The `Test-PythonAvailable` helper also probes `Program Files\Python3xx\` paths
 to find Python even when it is not on SYSTEM's PATH.
 
 ---
