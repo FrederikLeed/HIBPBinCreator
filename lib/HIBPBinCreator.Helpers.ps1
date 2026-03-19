@@ -94,7 +94,12 @@ function Test-CommandExists {
 function Test-PythonAvailable {
     <#
     .SYNOPSIS
-        Checks for Python 3.6+ on PATH and returns info or $null.
+        Checks for Python 3.6+ on PATH and well-known install locations.
+
+    .DESCRIPTION
+        Searches PATH first, then probes common machine-wide install paths
+        under Program Files. This ensures Python is found even when running
+        as SYSTEM (scheduled tasks) where user-profile installs are not on PATH.
 
     .OUTPUTS
         PSCustomObject with ExePath and Version properties, or $null if not found.
@@ -102,20 +107,35 @@ function Test-PythonAvailable {
     [CmdletBinding()]
     param()
 
+    # Build candidate list: PATH-based names first, then well-known machine-wide paths
     $candidates = @('python3', 'python', 'py')
 
+    # Probe Program Files for machine-wide installs (Python 3.13 down to 3.6)
+    foreach ($ver in 13..6) {
+        $candidates += "${env:ProgramFiles}\Python3${ver}\python.exe"
+    }
+
     foreach ($candidate in $candidates) {
-        $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
-        if ($cmd) {
+        $exePath = $null
+
+        if (Test-Path $candidate -ErrorAction SilentlyContinue) {
+            # Absolute path that exists on disk
+            $exePath = $candidate
+        } else {
+            $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+            if ($cmd) { $exePath = $cmd.Source }
+        }
+
+        if ($exePath) {
             try {
-                $verOutput = & $cmd.Source --version 2>&1
+                $verOutput = & $exePath --version 2>&1
                 $verString = ($verOutput | Out-String).Trim()
                 if ($verString -match 'Python\s+(\d+)\.(\d+)') {
                     $major = [int]$Matches[1]
                     $minor = [int]$Matches[2]
                     if ($major -ge 3 -and ($major -gt 3 -or $minor -ge 6)) {
                         return [PSCustomObject]@{
-                            ExePath = $cmd.Source
+                            ExePath = $exePath
                             Version = $verString
                         }
                     }

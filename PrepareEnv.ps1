@@ -251,8 +251,8 @@ if (-not $pyInfo) {
     Write-Log 'Python 3.6+ not found on PATH - will attempt installation.' -Level WARN
 
     if (Test-CommandExists 'winget') {
-        Write-Log 'Installing Python 3 via winget...'
-        & winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements
+        Write-Log 'Installing Python 3 machine-wide via winget...'
+        & winget install Python.Python.3.12 --scope machine --accept-source-agreements --accept-package-agreements
         if ($LASTEXITCODE -eq 0) {
             # Reload PATH so python is available in this session
             $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +

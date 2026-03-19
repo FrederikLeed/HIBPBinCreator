@@ -10,6 +10,11 @@
 3. On Windows, check "Add Python to PATH" during installation
 4. Verify: `python --version` should show Python 3.x
 
+**Running as SYSTEM (scheduled tasks):** Python must be installed machine-wide, not per-user.
+Use `winget install Python.Python.3.12 --scope machine` or select "Install for all users"
+in the Python installer. The tool automatically probes `C:\Program Files\Python3xx\` paths
+even when Python is not on SYSTEM's PATH.
+
 ## pypsirepacker Import Failure
 
 **Symptom:** PrepareEnv.ps1 reports "Failed to import pypsirepacker"

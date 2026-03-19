@@ -72,15 +72,15 @@
 
 ### Windows Task Scheduler
 
-Create a monthly scheduled task to refresh the HIBP binary:
+Create a weekly scheduled task to refresh the HIBP binary:
 
 ```powershell
 $action = New-ScheduledTaskAction `
-    -Execute 'powershell.exe' `
+    -Execute 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' `
     -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\HIBPBinCreator\BinaryCreator.ps1"' `
     -WorkingDirectory 'C:\HIBPBinCreator'
 
-$trigger = New-ScheduledTaskTrigger -Monthly -DaysOfMonth 1 -At '02:00'
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At '02:00'
 
 Register-ScheduledTask `
     -TaskName 'HIBP Binary Update' `
@@ -90,7 +90,10 @@ Register-ScheduledTask `
     -User 'SYSTEM'
 ```
 
-**Note:** When running as SYSTEM, ensure Python is installed system-wide and on the SYSTEM PATH. Use full paths in config if needed.
+**Running as SYSTEM:** Python must be installed machine-wide (`--scope machine`) so
+that SYSTEM can find it. `PrepareEnv.ps1` installs Python with `winget install --scope machine`
+by default. The `Test-PythonAvailable` helper also probes `Program Files\Python3xx\` paths
+to find Python even when it is not on SYSTEM's PATH.
 
 ---
 
