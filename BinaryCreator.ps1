@@ -189,7 +189,7 @@ Write-Log "Log file       : $script:LogFile"
 # -----------------------------------------------------------------------------
 #  Disk space pre-check
 # -----------------------------------------------------------------------------
-$MinFreeGB        = 100
+$MinFreeGB        = 140
 $driveLetter      = (Split-Path -Qualifier $HashesDir).TrimEnd(':')
 $driveInfo        = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
 $freeBytes        = if ($driveInfo) { $driveInfo.Free } else { 0 }

@@ -103,10 +103,10 @@ paths to find Python even when it is not on SYSTEM's PATH.
 
 | Phase | Disk usage |
 | --- | --- |
-| During download | ~69 GB (hash text file growing) |
-| During packing | ~100 GB (text + binary simultaneously) |
-| After cleanup | ~31 GB (binary only) |
+| During download | ~69 GB (text file) + ~31 GB (previous binary) |
+| During packing | ~100 GB (text + new binary) + ~31 GB (previous binary) |
+| After cleanup | ~31 GB (new binary only) |
 
-- Minimum recommended free space: **100 GB**
+- Minimum recommended free space: **140 GB** (accounts for previous binary during rebuild)
 - Text file is auto-deleted after successful packing (use `-KeepHashFile` to preserve)
 - Previous binary files are auto-deleted after the new binary passes the sanity check
