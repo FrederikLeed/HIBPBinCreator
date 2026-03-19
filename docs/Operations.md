@@ -109,4 +109,4 @@ paths to find Python even when it is not on SYSTEM's PATH.
 
 - Minimum recommended free space: **100 GB**
 - Text file is auto-deleted after successful packing (use `-KeepHashFile` to preserve)
-- Old binary files in `output\bin\` are not auto-deleted -- remove manually as needed
+- Previous binary files are auto-deleted after the new binary passes the sanity check

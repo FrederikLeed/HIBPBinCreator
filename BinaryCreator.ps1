@@ -319,6 +319,22 @@ if ($binSize -lt $minExpectedSize) {
 
 Write-Log "Binary sanity check passed: $(Format-Bytes $binSize) from $(Format-Bytes $hashSize) source." -Level SUCCESS
 
+# Remove previous binary files now that the new one is confirmed good
+$oldBins = Get-ChildItem -Path $BinDir -Filter 'hibpntlmhashes*.bin' -File |
+    Where-Object { $_.Name -ne $BinFileName }
+if ($oldBins) {
+    foreach ($old in $oldBins) {
+        try {
+            Remove-Item -Path $old.FullName -Force
+            Write-Log "Removed old binary: $($old.Name) ($(Format-Bytes $old.Length))" -Level SUCCESS
+        } catch {
+            Write-Log "Failed to remove old binary $($old.Name): $_" -Level WARN
+        }
+    }
+} else {
+    Write-Log 'No previous binary files to clean up.'
+}
+
 # Remove the source hash text file now that the binary is confirmed good
 if ($KeepHashFile) {
     Write-Log "-KeepHashFile specified - preserving source hash text file: $HashFile" -Level INFO
