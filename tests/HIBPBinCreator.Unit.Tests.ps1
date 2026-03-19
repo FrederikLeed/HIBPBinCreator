@@ -120,6 +120,7 @@ Describe 'Script Structure' {
     It '<Name> has [CmdletBinding()]' -ForEach @(
         @{ Name = 'PrepareEnv.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'PrepareEnv.ps1') }
         @{ Name = 'BinaryCreator.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'BinaryCreator.ps1') }
+        @{ Name = 'Register-ScheduledTask.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'Register-ScheduledTask.ps1') }
     ) {
         $content = Get-Content $Path -Raw
         $content | Should -Match '\[CmdletBinding\(\)\]' -Because "$Name should use CmdletBinding"
@@ -128,6 +129,7 @@ Describe 'Script Structure' {
     It '<Name> has comment-based help' -ForEach @(
         @{ Name = 'PrepareEnv.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'PrepareEnv.ps1') }
         @{ Name = 'BinaryCreator.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'BinaryCreator.ps1') }
+        @{ Name = 'Register-ScheduledTask.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'Register-ScheduledTask.ps1') }
     ) {
         $content = Get-Content $Path -Raw
         $content | Should -Match '\.SYNOPSIS' -Because "$Name should have .SYNOPSIS"
@@ -137,6 +139,7 @@ Describe 'Script Structure' {
     It '<Name> has #Requires -Version 5.1' -ForEach @(
         @{ Name = 'PrepareEnv.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'PrepareEnv.ps1') }
         @{ Name = 'BinaryCreator.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'BinaryCreator.ps1') }
+        @{ Name = 'Register-ScheduledTask.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'Register-ScheduledTask.ps1') }
         @{ Name = 'HIBPBinCreator.Helpers.ps1'; Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'lib\HIBPBinCreator.Helpers.ps1') }
     ) {
         $content = Get-Content $Path -Raw

@@ -1,6 +1,9 @@
 # Auto-generated environment
 config.psd1
 
+# User settings (copy settings.json.example to settings.json)
+settings.json
+
 # Downloaded hash data and binary output (~69 GB hash + ~31 GB bin)
 output/
 

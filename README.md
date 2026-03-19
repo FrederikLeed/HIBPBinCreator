@@ -76,10 +76,29 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 
 | Parameter | Default | Description |
 | --- | --- | --- |
+| `-OutputPath` | `output\bin\` | Directory for the final `.bin` file |
 | `-Parallelism` | `64` | Download thread count |
 | `-NoOverwrite` | `$false` | Skip overwriting existing hash ranges |
 | `-SkipDownload` | `$false` | Skip download if hash text file already exists |
 | `-KeepHashFile` | `$false` | Keep source `.txt` (~69 GB) instead of deleting after pack |
+
+### `settings.json` (optional)
+
+Copy `settings.json.example` to `settings.json` to set persistent defaults.
+Command-line parameters always override settings file values.
+
+```json
+{
+    "OutputPath": "D:\\HIBP\\bin",
+    "Parallelism": 32,
+    "KeepHashFile": false,
+    "NoOverwrite": false,
+    "SkipDownload": false
+}
+```
+
+This is useful for scheduled tasks where you want to configure once without
+changing the task definition.
 
 ---
 
@@ -127,7 +146,9 @@ HIBPBinCreator/
 ├── PrepareEnv.ps1              # Environment bootstrap
 ├── BinaryCreator.ps1           # Download + pack
 ├── Register-ScheduledTask.ps1  # Weekly task registration
+├── settings.json.example       # Runtime settings template
 ├── config.psd1                 # Auto-generated paths (git-ignored)
+├── settings.json               # User settings (git-ignored, copy from .example)
 ├── lib/
 │   └── HIBPBinCreator.Helpers.ps1  # Shared helper functions
 ├── pypsirepacker/              # Bundled Python hash converter

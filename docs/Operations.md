@@ -42,6 +42,11 @@
 .\BinaryCreator.ps1
 ```
 
+### Custom output path
+```powershell
+.\BinaryCreator.ps1 -OutputPath 'D:\HIBP\bin'
+```
+
 ### Skip download (reuse existing hash file)
 ```powershell
 .\BinaryCreator.ps1 -SkipDownload
@@ -61,10 +66,24 @@
 
 | Parameter | Default | Description |
 | --- | --- | --- |
+| `-OutputPath` | `output\bin\` | Directory for the final `.bin` file |
 | `-Parallelism` | `64` | Download thread count |
 | `-NoOverwrite` | `$false` | Do not overwrite existing hash ranges |
 | `-SkipDownload` | `$false` | Skip download if hash file exists |
 | `-KeepHashFile` | `$false` | Keep source text file after packing |
+
+### Settings file
+
+Copy `settings.json.example` to `settings.json` to set persistent defaults
+that apply every run without passing command-line parameters:
+
+```powershell
+Copy-Item settings.json.example settings.json
+# Edit settings.json with your preferred values
+```
+
+Command-line parameters always override settings file values. This is
+especially useful for scheduled tasks where the task definition stays fixed.
 
 ---
 

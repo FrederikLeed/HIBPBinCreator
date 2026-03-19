@@ -34,6 +34,7 @@ Describe 'README content coverage' {
     }
 
     It 'Documents key parameters' -ForEach @(
+        @{ Param = 'OutputPath' }
         @{ Param = 'Parallelism' }
         @{ Param = 'SkipDownload' }
         @{ Param = 'KeepHashFile' }
@@ -41,7 +42,27 @@ Describe 'README content coverage' {
     ) {
         $readme | Should -Match $Param -Because "README should document -$Param"
     }
+
+    It 'Documents settings.json' {
+        $readme | Should -Match 'settings\.json' -Because 'README should document settings.json'
+    }
 }
+
+Describe 'Settings template' {
+    It 'settings.json.example exists and is valid JSON' {
+        $examplePath = Join-Path $ProjectRoot 'settings.json.example'
+        Test-Path $examplePath | Should -BeTrue -Because 'settings.json.example should exist'
+        $content = Get-Content $examplePath -Raw
+        { $content | ConvertFrom-Json } | Should -Not -Throw -Because 'settings.json.example should be valid JSON'
+    }
+
+    It 'settings.json.example contains expected keys' {
+        $examplePath = Join-Path $ProjectRoot 'settings.json.example'
+        $parsed = Get-Content $examplePath -Raw | ConvertFrom-Json
+        $parsed.PSObject.Properties.Name | Should -Contain 'OutputPath'
+        $parsed.PSObject.Properties.Name | Should -Contain 'Parallelism'
+        $parsed.PSObject.Properties.Name | Should -Contain 'KeepHashFile'
+    }
 
 Describe 'Diagram files' {
     It 'HIBP-Pipeline.drawio exists' {
