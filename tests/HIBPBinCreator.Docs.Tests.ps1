@@ -29,21 +29,15 @@ Describe 'README content coverage' {
         $readme = Get-Content (Join-Path $ProjectRoot 'README.md') -Raw
     }
 
-    It 'Mentions Python as default' {
-        $readme | Should -Match 'Python|pypsirepacker' -Because 'README should mention Python/pypsirepacker'
-    }
-
-    It 'Mentions PsiRepacker as legacy' {
-        $readme | Should -Match 'PsiRepacker|legacy' -Because 'README should mention legacy PsiRepacker option'
+    It 'Mentions Python / pypsirepacker' {
+        $readme | Should -Match 'pypsirepacker' -Because 'README should mention pypsirepacker'
     }
 
     It 'Documents key parameters' -ForEach @(
         @{ Param = 'Parallelism' }
         @{ Param = 'SkipDownload' }
         @{ Param = 'KeepHashFile' }
-        @{ Param = 'UsePsiRepacker' }
-        @{ Param = 'PsiRepackerPath' }
-        @{ Param = 'UseLegacyPsiRepacker' }
+        @{ Param = 'Repacker' }
     ) {
         $readme | Should -Match $Param -Because "README should document -$Param"
     }
@@ -69,6 +63,6 @@ Describe 'LICENSE mentions BSD-3-Clause' {
     }
 
     It 'Contains BSD-3-Clause attribution' {
-        $license | Should -Match 'BSD.3.Clause' -Because 'LICENSE should include BSD-3-Clause for PyPsiRepacker/PsiRepacker'
+        $license | Should -Match 'BSD.3.Clause' -Because 'LICENSE should include BSD-3-Clause for pypsirepacker'
     }
 }

@@ -9,14 +9,11 @@
       - .NET SDK 8 LTS or later   (required by haveibeenpwned-downloader;
                                     installed via winget if not present)
       - haveibeenpwned-downloader  (dotnet tool; installed into BaseDir\tools)
-      - Python 3.6+               (validates pypsirepacker import)
+      - Python 3.6+               (installed via winget if not present;
+                                    validates pypsirepacker import)
 
     On success a config.psd1 file is written to the workspace root so that
     BinaryCreator.ps1 can locate every path it needs.
-
-    Legacy mode: use -UseLegacyPsiRepacker to use the C++ PsiRepacker.exe
-    binary instead of pypsirepacker.  Requires -PsiRepackerPath pointing to
-    an existing PsiRepacker.exe.
 
 .EXAMPLE
     .\PrepareEnv.ps1
@@ -25,8 +22,7 @@
     .\PrepareEnv.ps1 -Force   # re-runs all checks even if already satisfied
 
 .EXAMPLE
-    .\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath 'C:\tools\PsiRepacker.exe'
-    # Use the C++ binary instead of Python.
+    .\PrepareEnv.ps1 -All     # run every step (same as pressing Enter at the menu)
 #>
 
 [CmdletBinding()]
@@ -34,16 +30,12 @@ param(
     [string]$BaseDir   = $PSScriptRoot,
     [switch]$Force,
 
-    # -- Granular step selection (omit all three to get the interactive menu) --
+    # -- Granular step selection (omit all to get the interactive menu) --
     [switch]$All,              # run every step (same as default)
     [switch]$FolderStructure,  # Step 1 - create folder structure
     [switch]$DotNet,           # Step 2 - check / install .NET SDK
     [switch]$HibpDownloader,   # Step 3 - check / install haveibeenpwned-downloader
-    [switch]$Repacker,         # Step 4 - validate Python / pypsirepacker
-
-    # -- Legacy PsiRepacker.exe support (opt-in) ------------------------------
-    [switch]$UseLegacyPsiRepacker,
-    [string]$PsiRepackerPath = ''
+    [switch]$Repacker          # Step 4 - validate Python / pypsirepacker
 )
 
 Set-StrictMode -Version Latest
@@ -75,8 +67,7 @@ $script:LogFile = Join-Path $Dirs.Logs "PrepareEnv_$LogTimestamp.log"
 # -----------------------------------------------------------------------------
 #  Step selection
 # -----------------------------------------------------------------------------
-$hasPsiPath  = ($PsiRepackerPath -ne '')
-$anyExplicit = $All -or $FolderStructure -or $DotNet -or $HibpDownloader -or $Repacker -or $hasPsiPath -or $UseLegacyPsiRepacker
+$anyExplicit = $All -or $FolderStructure -or $DotNet -or $HibpDownloader -or $Repacker
 
 if (-not $anyExplicit) {
     Write-Host ''
@@ -100,10 +91,10 @@ if (-not $anyExplicit) {
         $runStep4 = ($tokens -contains '4')
     }
 } else {
-    $runStep1 = [bool]($All -or $FolderStructure -or $hasPsiPath -or $UseLegacyPsiRepacker)
-    $runStep2 = [bool]($All -or $DotNet         -or $hasPsiPath -or $UseLegacyPsiRepacker)
-    $runStep3 = [bool]($All -or $HibpDownloader -or $hasPsiPath -or $UseLegacyPsiRepacker)
-    $runStep4 = [bool]($All -or $Repacker       -or $hasPsiPath -or $UseLegacyPsiRepacker)
+    $runStep1 = [bool]($All -or $FolderStructure)
+    $runStep2 = [bool]($All -or $DotNet)
+    $runStep3 = [bool]($All -or $HibpDownloader)
+    $runStep4 = [bool]($All -or $Repacker)
 }
 
 Write-Host ''
@@ -246,104 +237,74 @@ if ($env:PATH -notlike "*$hibpToolsDir*") {
 }
 
 # -----------------------------------------------------------------------------
-#  Step 4 - Repacker (Python default, legacy PsiRepacker.exe opt-in)
+#  Step 4 - Python + pypsirepacker
 # -----------------------------------------------------------------------------
-$repackerMode       = 'Python'
-$pythonExe          = $null
-$pyPsiRepackerDir   = $null
-$psiRepackerExe     = $null
+$pythonExe        = $null
+$pyPsiRepackerDir = $null
 
 if ($runStep4) {
-Write-Step 'Step 4/4 - Validating repacker'
+Write-Step 'Step 4/4 - Validating Python and pypsirepacker'
 
-if ($UseLegacyPsiRepacker -or ($PsiRepackerPath -ne '')) {
-    # -- Legacy mode: PsiRepacker.exe -------------------------------------------
-    $repackerMode = 'Legacy'
+$pyInfo = Test-PythonAvailable
 
-    if ($PsiRepackerPath -eq '') {
-        Write-Log '-UseLegacyPsiRepacker specified but no -PsiRepackerPath given.' -Level ERROR
-        Write-Log 'Usage: .\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath "C:\path\to\PsiRepacker.exe"' -Level ERROR
-        exit 1
-    }
+if (-not $pyInfo) {
+    Write-Log 'Python 3.6+ not found on PATH - will attempt installation.' -Level WARN
 
-    if (Test-Path $PsiRepackerPath -PathType Leaf) {
-        $psiRepackerExe = (Resolve-Path $PsiRepackerPath).ProviderPath
-        Write-Log "Using legacy PsiRepacker binary: $psiRepackerExe" -Level SUCCESS
+    if (Test-CommandExists 'winget') {
+        Write-Log 'Installing Python 3 via winget...'
+        & winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements
+        if ($LASTEXITCODE -eq 0) {
+            # Reload PATH so python is available in this session
+            $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
+                        [System.Environment]::GetEnvironmentVariable('PATH', 'User')
+            Write-Log 'Python 3 installed successfully.' -Level SUCCESS
+            $pyInfo = Test-PythonAvailable
+        } else {
+            Write-Log 'winget installation of Python failed.' -Level WARN
+        }
     } else {
-        Write-Log "Supplied -PsiRepackerPath '$PsiRepackerPath' does not exist or is not a file." -Level ERROR
-        exit 1
+        Write-Log 'winget is not available - cannot auto-install Python.' -Level WARN
     }
-} else {
-    # -- Default mode: Python + pypsirepacker -----------------------------------
-    $pyInfo = Test-PythonAvailable
 
     if (-not $pyInfo) {
-        Write-Log 'Python 3.6+ not found on PATH - will attempt installation.' -Level WARN
-
-        if (Test-CommandExists 'winget') {
-            Write-Log 'Installing Python 3 via winget...'
-            & winget install Python.Python.3.12 --accept-source-agreements --accept-package-agreements
-            if ($LASTEXITCODE -eq 0) {
-                # Reload PATH so python is available in this session
-                $env:PATH = [System.Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' +
-                            [System.Environment]::GetEnvironmentVariable('PATH', 'User')
-                Write-Log 'Python 3 installed successfully.' -Level SUCCESS
-                $pyInfo = Test-PythonAvailable
-            } else {
-                Write-Log 'winget installation of Python failed.' -Level WARN
-            }
-        } else {
-            Write-Log 'winget is not available - cannot auto-install Python.' -Level WARN
-        }
-
-        if (-not $pyInfo) {
-            Write-Log @'
+        Write-Log @'
 Python 3.6+ could not be installed automatically.
 Please install Python 3.6 or later manually:
   https://www.python.org/downloads/
 Ensure python3 or python is on PATH, then re-run this script.
-
-Alternatively, use legacy mode with PsiRepacker.exe:
-  .\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath "C:\path\to\PsiRepacker.exe"
 '@ -Level ERROR
-            exit 1
-        }
-    }
-
-    $pythonExe = $pyInfo.ExePath
-    Write-Log "Python found: $($pyInfo.Version) at $pythonExe" -Level SUCCESS
-
-    # Validate pypsirepacker import from the bundled package
-    $pyPsiRepackerDir = Join-Path $PSScriptRoot 'pypsirepacker'
-    $parentDir        = $PSScriptRoot
-    $validateCmd      = "import sys; sys.path.insert(0, r'$parentDir'); from pypsirepacker.repacker import repack; print('OK')"
-
-    $validateResult = & $pythonExe -c $validateCmd 2>&1
-    $validateString = ($validateResult | Out-String).Trim()
-
-    if ($validateString -ne 'OK') {
-        Write-Log 'Failed to import pypsirepacker. Output:' -Level ERROR
-        Write-Log $validateString -Level ERROR
-        Write-Log "Ensure the pypsirepacker/ directory exists at: $pyPsiRepackerDir" -Level ERROR
         exit 1
     }
-
-    Write-Log "pypsirepacker validated: import OK from $pyPsiRepackerDir" -Level SUCCESS
 }
 
+$pythonExe = $pyInfo.ExePath
+Write-Log "Python found: $($pyInfo.Version) at $pythonExe" -Level SUCCESS
+
+# Validate pypsirepacker import from the bundled package
+$pyPsiRepackerDir = Join-Path $PSScriptRoot 'pypsirepacker'
+$parentDir        = $PSScriptRoot
+$validateCmd      = "import sys; sys.path.insert(0, r'$parentDir'); from pypsirepacker.repacker import repack; print('OK')"
+
+$validateResult = & $pythonExe -c $validateCmd 2>&1
+$validateString = ($validateResult | Out-String).Trim()
+
+if ($validateString -ne 'OK') {
+    Write-Log 'Failed to import pypsirepacker. Output:' -Level ERROR
+    Write-Log $validateString -Level ERROR
+    Write-Log "Ensure the pypsirepacker/ directory exists at: $pyPsiRepackerDir" -Level ERROR
+    exit 1
+}
+
+Write-Log "pypsirepacker validated: import OK from $pyPsiRepackerDir" -Level SUCCESS
+
 } else {
-    Write-Log 'Step 4 (repacker) skipped.' -Level WARN
+    Write-Log 'Step 4 (Python / pypsirepacker) skipped.' -Level WARN
 
     # If a config from a previous run exists, reuse settings from it
     $existingConfig = Join-Path $BaseDir 'config.psd1'
     if (Test-Path $existingConfig) {
         try {
             $prev = Import-PowerShellDataFile $existingConfig
-            if ($prev.RepackerMode -eq 'Legacy' -and $prev.PsiRepackerExe -and (Test-Path $prev.PsiRepackerExe)) {
-                $repackerMode   = 'Legacy'
-                $psiRepackerExe = $prev.PsiRepackerExe
-                Write-Log "Reusing existing PsiRepacker path from config: $psiRepackerExe"
-            }
             if ($prev.PythonExe) {
                 $pythonExe = $prev.PythonExe
             }
@@ -363,9 +324,8 @@ $configPath = Join-Path $BaseDir 'config.psd1'
 
 $dotnetToolsPath = $Dirs.Tools
 
-$psiRepackerExeValue = if ($psiRepackerExe) { $psiRepackerExe -replace "'","''" } else { '' }
-$pythonExeValue      = if ($pythonExe)       { $pythonExe -replace "'","''"      } else { '' }
-$pyPsiDirValue       = if ($pyPsiRepackerDir){ $pyPsiRepackerDir -replace "'","''" } else { '' }
+$pythonExeValue = if ($pythonExe)        { $pythonExe -replace "'","''"        } else { '' }
+$pyPsiDirValue  = if ($pyPsiRepackerDir) { $pyPsiRepackerDir -replace "'","''" } else { '' }
 
 $config = @"
 # Auto-generated by PrepareEnv.ps1 on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
@@ -378,20 +338,16 @@ $config = @"
     BinDir            = '$($Dirs.Bin     -replace "'","''")'
     LogsDir           = '$($Dirs.Logs    -replace "'","''")'
     DotnetToolsDir    = '$($dotnetToolsPath -replace "'","''")'
-    RepackerMode      = '$repackerMode'
     PythonExe         = '$pythonExeValue'
     PyPsiRepackerDir  = '$pyPsiDirValue'
-    PsiRepackerExe    = '$psiRepackerExeValue'
 }
 "@
 
-$hasRepacker = ($repackerMode -eq 'Legacy' -and $psiRepackerExe) -or ($repackerMode -eq 'Python' -and $pythonExe)
-
-if ($hasRepacker) {
+if ($pythonExe) {
     $config | Set-Content -Path $configPath -Encoding UTF8
     Write-Log "Config written: $configPath" -Level SUCCESS
 } else {
-    Write-Log 'config.psd1 not written - repacker not configured (run Step 4 to resolve).' -Level WARN
+    Write-Log 'config.psd1 not written - Python not configured (run Step 4 to resolve).' -Level WARN
 }
 
 # -----------------------------------------------------------------------------
@@ -403,22 +359,18 @@ $stepsRun = @()
 if ($runStep1) { $stepsRun += '1 (folder structure)' }
 if ($runStep2) { $stepsRun += '2 (.NET SDK)' }
 if ($runStep3) { $stepsRun += '3 (haveibeenpwned-downloader)' }
-if ($runStep4) { $stepsRun += '4 (repacker)' }
+if ($runStep4) { $stepsRun += '4 (Python / pypsirepacker)' }
 
 Write-Log "Steps run: $($stepsRun -join ', ')" -Level SUCCESS
 Write-Log ''
 if ($runStep2) { Write-Log "  .NET SDK              : $(& dotnet --version 2>&1)" }
 if ($runStep3) { Write-Log "  haveibeenpwned-downloader: installed" }
-Write-Log "  Repacker mode         : $repackerMode"
-if ($repackerMode -eq 'Python' -and $pythonExe) {
+if ($pythonExe) {
     Write-Log "  Python                : $pythonExe"
     Write-Log "  pypsirepacker         : $pyPsiRepackerDir"
 }
-if ($repackerMode -eq 'Legacy' -and $psiRepackerExe) {
-    Write-Log "  PsiRepacker.exe       : $psiRepackerExe"
-}
 Write-Log ''
-if ($hasRepacker) {
+if ($pythonExe) {
     Write-Log "  Config file           : $configPath"
 }
 Write-Log "  Log file              : $script:LogFile"

@@ -2,18 +2,13 @@
 
 ## Python Not Found
 
-**Symptom:** PrepareEnv.ps1 exits with "Python 3.6+ not found on PATH"
+**Symptom:** PrepareEnv.ps1 reports "Python 3.6+ not found" or "could not be installed automatically"
 
 **Solutions:**
 1. Install Python 3.6+ from https://www.python.org/downloads/
 2. Ensure `python3` or `python` is on your PATH
 3. On Windows, check "Add Python to PATH" during installation
 4. Verify: `python --version` should show Python 3.x
-
-**Alternative:** Use legacy PsiRepacker.exe mode:
-```powershell
-.\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath 'C:\path\to\PsiRepacker.exe'
-```
 
 ## pypsirepacker Import Failure
 
@@ -52,23 +47,9 @@
 
 **Symptom:** PrepareEnv.ps1 completes but no config.psd1 appears
 
-**Cause:** Step 4 (repacker validation) was skipped or failed. The config is only written when a repacker is successfully configured.
+**Cause:** Step 4 (Python validation) was skipped or failed. The config is only written when Python is successfully configured.
 
 **Solution:** Run all steps: `.\PrepareEnv.ps1 -All`
-
-## Legacy PsiRepacker Issues
-
-### PsiRepacker.exe not found
-Ensure the path passed to `-PsiRepackerPath` points to an existing file.
-
-### PsiRepacker.exe out of memory
-PsiRepacker.exe loads the entire hash file into memory (~50 GB). Use the Python default instead:
-```powershell
-.\BinaryCreator.ps1   # uses pypsirepacker by default
-```
-
-### MSBuild / Visual Studio errors
-These are no longer needed. The project now uses Python for hash conversion by default. MSBuild is only relevant if you're building PsiRepacker.exe from source externally.
 
 ## Binary Sanity Check Failed
 

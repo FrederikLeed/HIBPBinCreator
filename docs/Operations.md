@@ -21,11 +21,6 @@
 .\PrepareEnv.ps1 -Repacker          # Step 4 only
 ```
 
-### Legacy PsiRepacker.exe mode
-```powershell
-.\PrepareEnv.ps1 -UseLegacyPsiRepacker -PsiRepackerPath 'C:\tools\PsiRepacker.exe'
-```
-
 ### Parameters
 
 | Parameter | Default | Description |
@@ -37,8 +32,6 @@
 | `-DotNet` | `$false` | Step 2 -- check / install .NET SDK |
 | `-HibpDownloader` | `$false` | Step 3 -- check / install haveibeenpwned-downloader |
 | `-Repacker` | `$false` | Step 4 -- validate Python / pypsirepacker |
-| `-UseLegacyPsiRepacker` | `$false` | Use C++ PsiRepacker.exe instead of Python |
-| `-PsiRepackerPath` | `''` | Path to existing PsiRepacker.exe |
 
 ---
 
@@ -64,11 +57,6 @@
 .\BinaryCreator.ps1 -KeepHashFile
 ```
 
-### Legacy PsiRepacker.exe mode
-```powershell
-.\BinaryCreator.ps1 -UsePsiRepacker -PsiRepackerPath 'C:\tools\PsiRepacker.exe'
-```
-
 ### Parameters
 
 | Parameter | Default | Description |
@@ -77,8 +65,6 @@
 | `-NoOverwrite` | `$false` | Do not overwrite existing hash ranges |
 | `-SkipDownload` | `$false` | Skip download if hash file exists |
 | `-KeepHashFile` | `$false` | Keep source text file after packing |
-| `-UsePsiRepacker` | `$false` | Use legacy PsiRepacker.exe |
-| `-PsiRepackerPath` | `''` | Path to PsiRepacker.exe (implies legacy) |
 
 ---
 

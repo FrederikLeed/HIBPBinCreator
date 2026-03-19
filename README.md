@@ -71,8 +71,6 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 | `-DotNet` | `$false` | Run Step 2 only -- check / install .NET SDK |
 | `-HibpDownloader` | `$false` | Run Step 3 only -- check / install haveibeenpwned-downloader |
 | `-Repacker` | `$false` | Run Step 4 only -- validate Python / pypsirepacker |
-| `-UseLegacyPsiRepacker` | `$false` | Use legacy C++ PsiRepacker.exe instead of Python |
-| `-PsiRepackerPath` | `''` | Path to an existing `PsiRepacker.exe` (implies legacy mode) |
 
 ### `BinaryCreator.ps1`
 
@@ -82,8 +80,6 @@ Automated PowerShell toolchain that downloads the full **Have I Been Pwned NTLM 
 | `-NoOverwrite` | `$false` | Skip overwriting existing hash ranges |
 | `-SkipDownload` | `$false` | Skip download if hash text file already exists |
 | `-KeepHashFile` | `$false` | Keep source `.txt` (~69 GB) instead of deleting after pack |
-| `-UsePsiRepacker` | `$false` | Use legacy PsiRepacker.exe instead of Python |
-| `-PsiRepackerPath` | `''` | Path to an existing `PsiRepacker.exe` (implies legacy mode) |
 
 ---
 
@@ -104,13 +100,9 @@ Each 32-character hex NTLM hash is stored as 16 raw bytes. The count suffix from
 
 The hash conversion step uses **pypsirepacker**, a Python replacement for the original C++ PsiRepacker. It is bundled directly in the `pypsirepacker/` directory.
 
-**Advantages over PsiRepacker.exe:**
 - Cross-platform (Windows, Linux, macOS)
 - Zero external dependencies (pure Python, stdlib only)
 - Streaming conversion with near-zero memory usage
-- No MSBuild, Visual Studio, or C++ toolchain required
-
-**Legacy PsiRepacker.exe** is still supported via the `-UsePsiRepacker` / `-UseLegacyPsiRepacker` flags for environments that already have the binary available. Note that PsiRepacker.exe requires ~50 GB RAM and Windows only.
 
 ---
 
@@ -172,7 +164,7 @@ This toolchain is built on the work of others:
 | Project | Authors | License |
 | --- | --- | --- |
 | [PwnedPasswordsDownloader](https://github.com/HaveIBeenPwned/PwnedPasswordsDownloader) | Troy Hunt and contributors | BSD-3-Clause |
-| [PsiRepacker](https://github.com/improsec/PsiRepacker) / pypsirepacker | Improsec A/S, Valdemar Caroe | BSD-3-Clause |
+| pypsirepacker | Improsec A/S, Valdemar Caroe | BSD-3-Clause |
 | [Have I Been Pwned](https://haveibeenpwned.com) | Troy Hunt | -- |
 
 ---
